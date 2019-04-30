@@ -28,7 +28,7 @@ training_set = training_set[:,0:n]
 l = 10
 
 #%%
-lookback = 4   # history for next time step prediction 
+lookback = 1   # history for next time step prediction 
 slopenet = "LSTM"
 
 def create_training_data_lstm(training_set, dt, lookback):
@@ -39,7 +39,7 @@ def create_training_data_lstm(training_set, dt, lookback):
     For lookback = 2;  [y(n-2), y(n-1)] ------> [y(n)]
     """
     m,n = training_set.shape
-    ytrain = [training_set[i+1,2:n] for i in range(lookback-1,m-1)]
+    ytrain = [(training_set[i+1,2:n]-training_set[i,2:n]) for i in range(lookback-1,m-1)]
     ytrain = np.array(ytrain)
     xtrain = np.zeros((m-lookback,lookback,n))
     for i in range(m-lookback):
@@ -83,7 +83,7 @@ for i in range(n-2):
     ytrains[:,i] = (2.0*ytrain[:,i]-(ymax[i]+ymin[i]))/(ymax[i]-ymin[i])
 
 #%%
-indices = np.random.randint(0,xtrains.shape[0],8000)
+indices = np.random.randint(0,xtrains.shape[0],1000)
 xtrain1 = xtrains[indices]
 ytrain1 = ytrains[indices]
 
@@ -99,7 +99,7 @@ model.add(Dense(n-2))
 
 model.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy']) # compile the model
 
-history = model.fit(xtrains, ytrains, nb_epoch=100, batch_size=200, validation_split=0.1) # run the model
+history = model.fit(xtrain1, ytrain1, nb_epoch=600, batch_size=50, validation_split=0.1) # run the model
 
 loss = history.history['loss']
 val_loss = history.history['val_loss']
@@ -140,7 +140,7 @@ for i in range(lookback,m):
     yt = model.predict(xt_sc) # slope from LSTM/ ML model
     for k in range(n-2):
         yt_sc[0,k] = 0.5*(yt[0,k]*(ymax[k]-ymin[k])+(ymax[k]+ymin[k]))
-    yt_ml[i] = yt_sc # assign variable at next time ste y(n)
+    yt_ml[i] = yt_ml[i-1] + yt_sc # assign variable at next time ste y(n)
     e = xt.copy()   # temporaty variable
     for j in range(lookback-1):
         e[0,j,:] = e[0,j+1,:]

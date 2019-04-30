@@ -173,7 +173,7 @@ b_nl = np.zeros((n_modes,n_modes, n_modes))
 phid = np.zeros((nx+1,n_modes))
 phidd = np.zeros((nx+1,n_modes))
 
-re_test = 750.0
+re_test = 2000.0
 nu_test = 1.0/re_test
 umdd = np.zeros(nx+1)
 umd = np.zeros(nx+1)
@@ -237,13 +237,14 @@ for k in range(1,nt+1):
 t = t.reshape(nt+1,1)
 ret = np.array([re_test for i in range(nt+1)])
 ret = ret.reshape(nt+1,1)
-filename = 'at.csv'
+filename = 'at_2000.csv'
 rt = np.hstack((ret, t, np.transpose(at)))
 np.savetxt(filename, rt, delimiter=",")
-filename = 'agp.csv'
+filename = 'agp_2000.csv'
 rgp = np.hstack((ret, t, np.transpose(a)))
 np.savetxt(filename, rgp, delimiter=",")
 
+#%%
 #--------------------------------------------------ANN --------------------------------------------------# 
 n_train = (nt+1)*n_re #total number of training sample
 utrain = np.zeros((nx+1,n_train))

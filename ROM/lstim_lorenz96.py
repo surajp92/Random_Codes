@@ -1,10 +1,59 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Mar 16 13:38:12 2019
+Created on Mon Apr 29 08:59:26 2019
 
 @author: Suraj Pawar
 """
+
+from scipy.integrate import odeint
+import matplotlib.pyplot as plt
+import numpy as np
+
+# these are our constants
+N = 40  # number of variables
+F = 4  # forcing
+
+def Lorenz96(x,t):
+
+  # compute state derivatives
+  d = np.zeros(N)
+  # first the 3 edge cases: i=1,2,N
+  d[0] = (x[1] - x[N-2]) * x[N-1] - x[0]
+  d[1] = (x[2] - x[N-1]) * x[0]- x[1]
+  d[N-1] = (x[0] - x[N-3]) * x[N-2] - x[N-1]
+  # then the general case
+  for i in range(2, N-1):
+      d[i] = (x[i+1] - x[i-2]) * x[i-1] - x[i]
+  # add the forcing term
+  d = d + F
+
+  # return the state derivatives
+  return d
+
+x0 = F*np.ones(N) # initial state (equilibrium)
+x0[1] += 0.01 # add small perturbation to 20th variable
+t = np.arange(0.0, 30.0, 0.01)
+
+x = odeint(Lorenz96, x0, t)
+
+# plot first three variables
+from mpl_toolkits.mplot3d import Axes3D
+fig = plt.figure()
+ax = fig.gca(projection='3d')
+ax.plot(x[:,0],x[:,1],x[:,2])
+ax.set_xlabel('$x_1$')
+ax.set_ylabel('$x_2$')
+ax.set_zlabel('$x_3$')
+plt.show()
+
+#%%
+fig, ax1 = plt.subplots(nrows=1, figsize=(7,3.5))
+xx = np.linspace(0,N,N)
+ax1.contourf(t,xx,x.T, 40, cmap='jet', interpolation='bilinear')
+plt.show()
+
+#%%
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy.random import seed
@@ -19,16 +68,13 @@ from keras.layers import LSTM, GRU
 from keras import initializers
 
 #%%
-dataset_train = pd.read_csv('./at_all.csv', sep=",",skiprows=0,header = None)#, nrows=1001)
-m,n=dataset_train.shape
-training_set = dataset_train.iloc[:,0:n].values
-t = training_set[:,1]
+training_set = x
+m,n=training_set.shape
 dt = t[1] - t[0]
-training_set = training_set[:,0:n]
-l = 10
+l = 1
 
 #%%
-lookback = 4   # history for next time step prediction 
+lookback = 20   # history for next time step prediction 
 slopenet = "LSTM"
 
 def create_training_data_lstm(training_set, dt, lookback):
@@ -39,7 +85,7 @@ def create_training_data_lstm(training_set, dt, lookback):
     For lookback = 2;  [y(n-2), y(n-1)] ------> [y(n)]
     """
     m,n = training_set.shape
-    ytrain = [training_set[i+1,2:n] for i in range(lookback-1,m-1)]
+    ytrain = [(training_set[i+1,:]-training_set[i,:]) for i in range(lookback-1,m-1)]
     ytrain = np.array(ytrain)
     xtrain = np.zeros((m-lookback,lookback,n))
     for i in range(m-lookback):
@@ -53,7 +99,7 @@ def create_training_data_lstm(training_set, dt, lookback):
 #%%
 for k in range(l):
     p = int(k*m/l)
-    q = int(p+1001)
+    q = int(p+m)
     xt, yt = create_training_data_lstm(training_set[p:q,:], dt, lookback)
     if k == 0:
         xtrain = xt
@@ -64,26 +110,26 @@ for k in range(l):
 
 #%% calculate maximum and minimum for scaling
 xmax, xmin = [np.zeros(n) for i in range(2)]
-ymax, ymin = [np.zeros(n-2) for i in range(2)]
+ymax, ymin = [np.zeros(n) for i in range(2)]
 for i in range(n):
     xmax[i] = np.max(xtrain[:,:,i])
     xmin[i] = np.min(xtrain[:,:,i])
 
-for i in range(n-2):
+for i in range(n):
     ymax[i] = max(ytrain[:,i])
     ymin[i] = min(ytrain[:,i])
 
 #%% scale the input and output data to (-1,1)
 xtrains = np.zeros((m-lookback*l,lookback,n)) 
-ytrains = np.zeros((m-lookback*l,n-2)) 
+ytrains = np.zeros((m-lookback*l,n)) 
 for i in range(n):
     xtrains[:,:,i] = (2.0*xtrain[:,:,i]-(xmax[i]+xmin[i]))/(xmax[i]-xmin[i])
     
-for i in range(n-2):
+for i in range(n):
     ytrains[:,i] = (2.0*ytrain[:,i]-(ymax[i]+ymin[i]))/(ymax[i]-ymin[i])
 
 #%%
-indices = np.random.randint(0,xtrains.shape[0],8000)
+indices = np.random.randint(0,xtrains.shape[0],2000)
 xtrain1 = xtrains[indices]
 ytrain1 = ytrains[indices]
 
@@ -95,11 +141,11 @@ model.add(LSTM(40, input_shape=(lookback, n), return_sequences=True, activation=
 #model.add(LSTM(40, input_shape=(lookback, n), return_sequences=True, activation='tanh', kernel_initializer='uniform'))
 #model.add(LSTM(40, input_shape=(lookback, n), return_sequences=True, activation='tanh', kernel_initializer='uniform'))
 model.add(LSTM(40, input_shape=(lookback, n), activation='tanh', kernel_initializer='uniform'))
-model.add(Dense(n-2))
+model.add(Dense(n))
 
 model.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy']) # compile the model
 
-history = model.fit(xtrains, ytrains, nb_epoch=100, batch_size=200, validation_split=0.1) # run the model
+history = model.fit(xtrains, ytrains, nb_epoch=200, batch_size=500, validation_split=0.1) # run the model
 
 loss = history.history['loss']
 val_loss = history.history['val_loss']
@@ -113,80 +159,59 @@ plt.legend()
 plt.show()
 
 #%%
-dataset_test = pd.read_csv('./at.csv', sep=",",header = None, skiprows=0)#, nrows=2000)
-m,n=dataset_test.shape
-testing_set = dataset_test.iloc[:,0:n].values
-t = testing_set[:,1]
-m,n = testing_set.shape
+testing_set = x
+m,n=testing_set.shape
 
 #%%
 xt = np.zeros((1,lookback,n))
-yt_ml = np.zeros((m,n-2))
+yt_ml = np.zeros((m,n))
 xt_check = np.zeros((m,lookback,n))
 
 for i in range(lookback):
     # create data for testing at first time step
     xt[0,i,:] = testing_set[i]
-    yt_ml[i] = testing_set[i,2:]
+    yt_ml[i] = testing_set[i]
 
 xt_check[0,:,:] = xt
 #%%
 xt_sc = np.zeros((1,lookback,n))
-yt_sc = np.zeros((1,n-2))
+yt_sc = np.zeros((1,n))
 
 for i in range(lookback,m):
     for k in range(n):
         xt_sc[:,:,k] = (2.0*xt[:,:,k]-(xmax[k]+xmin[k]))/(xmax[k]-xmin[k])
     yt = model.predict(xt_sc) # slope from LSTM/ ML model
-    for k in range(n-2):
+    for k in range(n):
         yt_sc[0,k] = 0.5*(yt[0,k]*(ymax[k]-ymin[k])+(ymax[k]+ymin[k]))
-    yt_ml[i] = yt_sc # assign variable at next time ste y(n)
+    yt_ml[i] = yt_ml[i-1] + yt_sc # assign variable at next time ste y(n)
     e = xt.copy()   # temporaty variable
     for j in range(lookback-1):
         e[0,j,:] = e[0,j+1,:]
-    e[0,lookback-1,0] = testing_set[i,0]
-    e[0,lookback-1,1] = testing_set[i,1]
-    e[0,lookback-1,2:] = yt_ml[i]
+    e[0,lookback-1,:] = yt_ml[i]
     xt = e # update the input for the variable prediction at time step (n+1)
     xt_check[i,:,:] = xt
 
 ytest_ml = yt_ml    
-
-#%%
-t = t.reshape(m,1)
-filename = 'aml.csv'
-rt = np.hstack((t, ytest_ml))
-np.savetxt(filename, rt, delimiter=",")
-
-#%%
-at = np.loadtxt(open('at.csv', "rb"), delimiter=",", skiprows=0)
-agp = np.loadtxt(open('agp.csv', "rb"), delimiter=",", skiprows=0)
-aml = np.loadtxt(open('aml.csv', "rb"), delimiter=",", skiprows=0)
-m,n = at.shape
 
 #%% plotting
 font = {'family' : 'Times New Roman',
         'size'   : 14}	
 plt.rc('font', **font)
 
-nrows = int((n-1)/2)
+nrows = 5
 k = 1
-fig, axs = plt.subplots(nrows, 2, figsize=(11,8))#, constrained_layout=True)
+fig, axs = plt.subplots(nrows, figsize=(11,8))#, constrained_layout=True)
 for i in range(nrows):
-    for j in range(2):
-        axs[i,j].plot(at[:,1],at[:,k+1], color='black', linestyle='-', label=r'$y_'+str(i+1)+'$'+' (True)', zorder=5)
-        axs[i,j].plot(agp[:,1],agp[:,k+1], color='blue', linestyle='-.', label=r'$y_'+str(i+1)+'$'+' (GP)', zorder=5) 
-        axs[i,j].plot(at[:,1],aml[:,k], color='red', linestyle='--', label=r'$y_'+str(i+1)+'$'+' (GP)', zorder=5)
-        axs[i,j].set_xlim([0, at[m-1,1]])
-        axs[i,j].set_ylabel('$a_'+'{'+(str(k)+'}'+'$'), fontsize = 14)
-        axs[i,j].set_xlabel('Time', fontsize = 14)
-        k = int(k+1)
+    axs[i].plot(t,x[:,i], color='black', linestyle='-', label=r'$y_'+str(i+1)+'$'+' (True)', zorder=5)
+    axs[i].plot(t,ytest_ml[:,i], color='red', linestyle='--', label=r'$y_'+str(i+1)+'$'+' (GP)', zorder=5)
+    axs[i].set_ylabel('$a_'+'{'+(str(k)+'}'+'$'), fontsize = 14)
+    axs[i].set_xlabel('Time', fontsize = 14)
 
 fig.tight_layout() 
 
 fig.subplots_adjust(bottom=0.1)
 
-line_labels = ["True", "ROM-G", "ML"]#, "ML-Train", "ML-Test"]
+line_labels = ["True", "ML"]#, "ML-Train", "ML-Test"]
 plt.figlegend( line_labels,  loc = 'lower center', borderaxespad=0.1, ncol=6, labelspacing=0.,  prop={'size': 13} ) #bbox_to_anchor=(0.5, 0.0), borderaxespad=0.1, 
 
-fig.savefig('gp.eps')#, bbox_inches = 'tight', pad_inches = 0.01)
+fig.savefig('lorenz96.eps')#, bbox_inches = 'tight', pad_inches = 0.01)
