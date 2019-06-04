@@ -15,7 +15,7 @@ n = 99
 h = 0.01
 xx = np.linspace(0,1,n+2)
 xx = xx.reshape(n+2,1)
-control = 10.0
+control = 0.0001
 
 #%%
 f = np.sin(np.pi*xx)
@@ -85,7 +85,7 @@ gamma_p = 10*np.ones(n)
 gamma_p = gamma_p.reshape(n,1)
 x_n = x_p.copy
 gamma_n = gamma_p
-rms = 1.0
+rms = 10.0
 k = 0
 iteration_history = np.empty(shape=[0, 2])
 #%%
@@ -94,10 +94,10 @@ while rms>1e-6:
     x_n = x_p - alpha*(np.dot(q, x_p) - np.dot(c.T, gamma_p))
     gamma_p = gamma_p + beta*(m - np.dot(c,x_n))
     rms = LA.norm(x_n - x_p)
-    print(rms)
+#    print(rms)
     k = k+1
     x_p = x_n
-    iteration_history = np.append(iteration_history, [[k, rms]], axis=0)
+#    iteration_history = np.append(iteration_history, [[k, rms]], axis=0)
 #    if k>50:
 #        grad_f = np.dot(q, x_n)
 #        alpha = (np.dot(grad_f.T, grad_f))/(np.dot(grad_f.T, np.dot(q, grad_f)))
@@ -105,12 +105,11 @@ while rms>1e-6:
 
 #%%
 #w = 99
-##while k<2:
 #while rms>1e-6:
 #    x_n = x_p - alpha*(np.dot(q, x_p) - np.dot(c.T, gamma_p))
 #    gamma_p = gamma_p + beta*(f[1:n+1] - np.dot(a, theta_d[1:n+1]) - np.dot(c,x_n))
 #    rms = LA.norm(x_n - x_p)
-#    print(rms)
+##    print(rms)
 #    k = k+1
 #    for j in range(99,198):
 #        if x_n[j]<-1.0:
@@ -147,11 +146,11 @@ plt.tight_layout()
 fig.savefig('contorl_10_theta.eps')
 
 #%%
-obj_f_a = 0.5*LA.norm(theta_a-theta_d) + 0.5*control*LA.norm(u_a)
-obj_f_n = 0.5*LA.norm(theta_n-theta_d) + 0.5*control*LA.norm(u_n)
+obj_f_a = 0.5*(LA.norm(theta_a-theta_d)**2) + 0.5*control*(LA.norm(u_a)**2)
+obj_f_n = 0.5*(LA.norm(theta_n-theta_d)**2) + 0.5*control*(LA.norm(u_n)**2)
 
 list = [control, obj_f_a, obj_f_n]
-with open('time.csv', 'a') as f:
+with open('objectiv_function.csv', 'a') as f:
     f.write("\n")
     for item in list:
         f.write("%s\t" % item)

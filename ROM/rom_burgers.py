@@ -144,7 +144,8 @@ c = np.zeros((n_s,n_s))
 for l in range(n_s):
     for k in range(n_s):
         c[k,l] = simps(uf[:,k]*uf[:,l],x)
-            
+
+#%%            
 #solve eigensystem
 w, v = LA.eig(c)      
 w = np.real(w)
