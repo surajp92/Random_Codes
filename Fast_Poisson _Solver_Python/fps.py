@@ -66,14 +66,12 @@ def fps(nx, ny, dx, dy, f):
     
     # compute the inverse fourier transform
     u = np.real(fft_object_inv(data1))
-    return u
-    
-    
+    return u    
     
 #%%
 # 
-nx = 64
-ny = 64
+nx = 8
+ny = 8
 x = np.linspace(0.0,2.0*np.pi,nx+1)
 y = np.linspace(0.0,2.0*np.pi,ny+1)
 dx = 2.0*np.pi/(nx)
@@ -84,8 +82,9 @@ f = np.empty((nx+1,ny+1))
 
 # test case Ue = sin(3x) + cos(2y); f = -9sin(3x) - 4cos(2y)
 for i in range(nx+1):
-    ue[i,:] = np.sin(3.0*x[i]) + np.cos(2.0*y)
-    f[i,:] = -9.0*np.sin(3.0*x[i]) -4.0*np.cos(2.0*y)
+    for j in range(ny+1):
+        ue[i,j] = np.sin(3.0*x[i]) + np.cos(2.0*y[j])
+        f[i,j] = -9.0*np.sin(3.0*x[i]) -4.0*np.cos(2.0*y[j])
 
 u = np.zeros((nx+1, ny+1))
 # fps subroutine skips the last row and last column since the boundary condition is periodic
@@ -113,7 +112,3 @@ fig.colorbar(cs, cax=cbar_ax, orientation='horizontal')
 plt.show()
 
 fig.savefig("fps.eps", bbox_inches = 'tight')
-
-        
-        
-
