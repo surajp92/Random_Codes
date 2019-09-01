@@ -11,6 +11,8 @@ from numpy.random import seed
 seed(1)
 import pprint
 
+from sklearn.neighbors import KDTree
+
 #%%
 def distane_squared(data1, data2):
     x1, y1 = data1[0], data1[1]
@@ -44,7 +46,7 @@ def find_nearest_neighbour(train_data, test_data):
 #%%
 k = 2
 def build_kdtree_median(train_data, depth = 0):
-    print(train_data)
+    
     n = (train_data.shape[0])
    
     if n <= 0:
@@ -95,7 +97,6 @@ def kdtree_nearest_neighbour(kdtree, test_data, depth = 0):
 def kdtree_nearest_neighbour_median(kdtree, test_data, nearest=None, depth = 0):
     k = 2
 
-    print(type(nearest))
     if kdtree == None:
         return nearest
     
@@ -108,9 +109,7 @@ def kdtree_nearest_neighbour_median(kdtree, test_data, nearest=None, depth = 0):
         next_best = kdtree['data']
     else:
         next_best = nearest
-    
-    print(next_best)
-    
+        
     if test_data[axis] < kdtree['data'][axis]:
         next_branch = kdtree['left']
     else:
@@ -118,9 +117,55 @@ def kdtree_nearest_neighbour_median(kdtree, test_data, nearest=None, depth = 0):
         
     return kdtree_nearest_neighbour_median(next_branch, test_data, next_best, depth + 1)   
 
+#%%
+def closer_distance(test_data, p1, p2):
+    
+    if p1 is None:
+        return p2
+    
+    if p2 is None:
+        return p1
+    
+    d1 = distane_squared(test_data,p1)
+    d2 = distane_squared(test_data,p2)
+    
+    if d1 < d2:
+        return p1
+    else:
+        return p2
+
+def kdtree_nearest_neighbour_advanced(kdtree, test_data, depth = 0):
+    k = 2
+
+    if kdtree == None:
+        return None
+    
+    axis = depth % k
+    
+    next_branch = None
+    opposite_branch = None
+    
+    if test_data[axis] < kdtree['data'][axis]:
+        next_branch = kdtree['left']
+        opposite_branch = kdtree['right']
+    else:
+        next_branch = kdtree['right']
+        opposite_branch = kdtree['left']
+    
+    nearest = closer_distance(test_data,
+                           kdtree_nearest_neighbour_advanced(next_branch, test_data, depth + 1),
+                           kdtree['data'])
+    
+    if distane_squared(test_data, nearest) > (test_data[axis] - kdtree['data'][axis])**2:
+        nearest = closer_distance(test_data,
+                           kdtree_nearest_neighbour_advanced(opposite_branch, test_data, depth + 1),
+                           kdtree['data'])
+    
+    return nearest
+
        
 #%%
-train_data = np.random.randn(5,2)
+train_data = np.random.randn(10,2)
 test_data = np.array([0.5,0.5])
 
 #%%
@@ -131,14 +176,17 @@ print(nearest_neighbour)
 kdtree_median = (build_kdtree_median(train_data))
 
 #%%
-kdtree_mean = (build_kdtree_mean(train_data))
-#pprint.pprint(s_data)
+nearest = np.array([None,None])
+nn_simple = kdtree_nearest_neighbour_median(kdtree_median, test_data, nearest)
+print(nn_simple)
 
 #%%
-#test_data = test_data.reshape((1,2))    
-nearest = np.array([None,None])
-nn = kdtree_nearest_neighbour_median(kdtree_median, test_data, nearest)
-print(nn)
+nn_advanced = kdtree_nearest_neighbour_advanced(kdtree_median, test_data)
+print(nn_simple)
+
+#%%
+tree = KDTree(train_data, leaf_size=2)
+nearest_dist, nearest_ind = tree.query(test_data.reshape((1,2)), k=1)
 
 
 
