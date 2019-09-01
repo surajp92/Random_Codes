@@ -43,8 +43,24 @@ def find_nearest_neighbour(train_data, test_data):
 
 #%%
 k = 2
-
-def build_kdtree(train_data, depth = 0):
+def build_kdtree_median(train_data, depth = 0):
+    print(train_data)
+    n = (train_data.shape[0])
+   
+    if n <= 0:
+        return None
+    
+    axis = depth%k
+     
+    train_data = train_data[train_data[:,axis].argsort()]
+        
+    return {
+            'data': np.array(train_data[n//2,:]),
+            'left': build_kdtree_median(train_data[:n//2,:], depth+1),
+            'right': build_kdtree_median(train_data[n//2+1:,:], depth+1)
+            }
+    
+def build_kdtree_mean(train_data, depth = 0):
     n = (train_data.shape[0])
    
     if n <= 1:
@@ -56,8 +72,8 @@ def build_kdtree(train_data, depth = 0):
         
     return {
             'data': np.array(data_mean),
-            'left': build_kdtree(train_data[train_data[:,axis] < data_mean], depth+1),
-            'right': build_kdtree(train_data[train_data[:,axis] > data_mean], depth+1)
+            'left': build_kdtree_mean(train_data[train_data[:,axis] < data_mean], depth+1),
+            'right': build_kdtree_mean(train_data[train_data[:,axis] > data_mean], depth+1)
             }
                       
 #%%
@@ -74,20 +90,54 @@ def kdtree_nearest_neighbour(kdtree, test_data, depth = 0):
         print((next_branch[0].shape))
         return next_branch[0]
     else:
-        return kdtree_nearest_neighbour(next_branch, test_data, depth + 1)    
+        return kdtree_nearest_neighbour(next_branch, test_data, depth + 1)   
 
+def kdtree_nearest_neighbour_median(kdtree, test_data, nearest=None, depth = 0):
+    k = 2
+
+    print(type(nearest))
+    if kdtree == None:
+        return nearest
+    
+    axis = depth % k
+    
+    next_best = None
+    next_branch = None
+    
+    if nearest.any() == None or distane_squared(test_data,nearest) > distane_squared(test_data,kdtree['data']):
+        next_best = kdtree['data']
+    else:
+        next_best = nearest
+    
+    print(next_best)
+    
+    if test_data[axis] < kdtree['data'][axis]:
+        next_branch = kdtree['left']
+    else:
+        next_branch = kdtree['right']
+        
+    return kdtree_nearest_neighbour_median(next_branch, test_data, next_best, depth + 1)   
+
+       
 #%%
 train_data = np.random.randn(5,2)
 test_data = np.array([0.5,0.5])
 
+#%%
 nearest_neighbour, nearest_distance = find_nearest_neighbour(train_data, test_data)
 print(nearest_neighbour)
 
-s_data = (build_kdtree(train_data))
+#%%
+kdtree_median = (build_kdtree_median(train_data))
+
+#%%
+kdtree_mean = (build_kdtree_mean(train_data))
 #pprint.pprint(s_data)
 
-test_data = test_data.reshape((1,2))    
-nn = kdtree_nearest_neighbour(s_data, test_data)
+#%%
+#test_data = test_data.reshape((1,2))    
+nearest = np.array([None,None])
+nn = kdtree_nearest_neighbour_median(kdtree_median, test_data, nearest)
 print(nn)
 
 
