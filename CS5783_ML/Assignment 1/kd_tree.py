@@ -156,10 +156,10 @@ def kdtree_nearest_neighbour_advanced(kdtree, test_data, depth = 0):
                            kdtree_nearest_neighbour_advanced(next_branch, test_data, depth + 1),
                            kdtree['data'])
     
-    if distane_squared(test_data, nearest) > (test_data[axis] - kdtree['data'][axis])**2:
+    if distane_squared(test_data, nearest) > abs(test_data[axis] - kdtree['data'][axis]):
         nearest = closer_distance(test_data,
                            kdtree_nearest_neighbour_advanced(opposite_branch, test_data, depth + 1),
-                           kdtree['data'])
+                           nearest)
     
     return nearest
 
@@ -182,13 +182,15 @@ print(nn_simple)
 
 #%%
 nn_advanced = kdtree_nearest_neighbour_advanced(kdtree_median, test_data)
-print(nn_simple)
+print(nn_advanced)
+nn_advanced_ind = np.argwhere(train_data == nn_advanced)[0,0]
+print(nn_advanced_ind)
 
 #%%
 tree = KDTree(train_data, leaf_size=2)
 nearest_dist, nearest_ind = tree.query(test_data.reshape((1,2)), k=1)
-
-
+print(train_data[nearest_ind[0]])
+print(nearest_ind[0])
 
 
 
