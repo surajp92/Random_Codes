@@ -42,6 +42,7 @@ def build_kdtree(train_data, depth = 0):
 
 #%%        
 def nearer_neighbour(test_data, point1, point2):
+    print('2')
     if point1 is None:
         return point2
     
@@ -78,8 +79,11 @@ def kdtree_nearest_neighbour(kdtree, test_data, depth = 0):
     nearest = nearer_neighbour(test_data,
                            kdtree_nearest_neighbour(next_branch, test_data, depth + 1),
                            kdtree['data'])
+    print(nearest)
     
     if l2_distane(test_data, nearest) > abs(test_data[axis] - kdtree['data'][axis]):
+        print('1')
+        print(nearest)
         nearest = nearer_neighbour(test_data,
                            kdtree_nearest_neighbour(opposite_branch, test_data, depth + 1),
                            nearest)
@@ -87,7 +91,7 @@ def kdtree_nearest_neighbour(kdtree, test_data, depth = 0):
     return nearest  
 
 #%%
-train_data = np.random.randn(100,2)
+train_data = np.random.randn(50,2)
 test_data = np.array([0.5,0.5])
 
 #%%
