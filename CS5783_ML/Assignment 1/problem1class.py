@@ -17,28 +17,32 @@ from sklearn.neighbors import KDTree
 class KDTree1:
     def __init__(self, matrix,depth=0):
         self.train_data = matrix
-        self.k = matrix.shape[1]
-        
-        axis = depth % self.k
         
         n = (matrix.shape[0])
         
-        if n <= 0:
-            return None
+        if n == 0:
+            self.data = None
+        elif n == 1:
+            self.data = matrix[n//2,:]
+            self.left = KDTree1(np.array([]),depth)
+            self.right = KDTree1(np.array([]),depth)
+        else:
+            self.k = matrix.shape[1]
+            axis = depth % self.k
         
-        matrix = matrix[matrix[:,axis].argsort()]
-        
-        depth = depth + 1
-        self.data = matrix[n//2,:]
-        self.left = KDTree1(matrix[:n//2,:], depth)
-        self.right = KDTree1(matrix[n//2+1:,:], depth)
+            matrix = matrix[matrix[:,axis].argsort()]
+            
+            depth = depth + 1
+            self.data = matrix[n//2,:]
+            self.left = KDTree1(matrix[:n//2,:], depth)
+            self.right = KDTree1(matrix[n//2+1:,:], depth)
            
     def l2_distane(data1, data2):
         x1, y1 = data1[0], data1[1]
         x2, y2 = data2[0], data2[1]
         
         dx = x2 - x1
-        dy = y2-y1
+        dy = y2 - y1
         
         return np.sqrt(dx**2 + dy**2)
         
@@ -58,9 +62,11 @@ class KDTree1:
         else:
             return point2
     
-    def kdtree_nearest_neighbour(self, test_data, depth = 0):   
-        
-        print(self.data)
+    def kdtree_nearest_neighbour(self, test_data, depth = 0, nearest = None):   
+
+        if self.data is None:
+            return nearest
+               
         axis = depth % self.k
         
         next_branch = None
@@ -72,19 +78,16 @@ class KDTree1:
         else:
             next_branch = self.right
             opposite_branch = self.left
-        
-        if next_branch is None or opposite_branch is None:
-            return None
                
         nearest = self.nearer_neighbour(test_data,
-                               next_branch.kdtree_nearest_neighbour(test_data, depth + 1),
+                               KDTree1.kdtree_nearest_neighbour(next_branch, test_data, depth + 1),
                                self.data)
         pprint.pprint(nearest)
         
         if self.l2_distane(test_data, nearest) > abs(test_data[axis] - self.data[axis]):
             
             nearest = self.nearer_neighbour(test_data,
-                               opposite_branch.kdtree_nearest_neighbour(test_data, depth + 1),
+                               KDTree1.kdtree_nearest_neighbour(opposite_branch, test_data, depth + 1),
                                nearest)
         
         return nearest

@@ -33,46 +33,30 @@ function jacobiandealiased(nx,ny,dx,dy,wf,k2)
         j3f[i,j] = 1.0im*wf[i,j]*ky[j]/k2[i,j]
     end end
 
-    nxe = Int64(nx*2)
-    nye = Int64(ny*2)
+    nxe = Int64(floor(nx*2/3))
+    nye = Int64(floor(ny*2/3))
 
-    j1f_padded = zeros(ComplexF64,nxe,nye)
-    j2f_padded = zeros(ComplexF64,nxe,nye)
-    j3f_padded = zeros(ComplexF64,nxe,nye)
-    j4f_padded = zeros(ComplexF64,nxe,nye)
+    for i = Int64(floor(nxe/2)+1):Int64(nx-floor(nxe/2)) for j = 1:ny
+        j1f[i,j] = 0.0
+        j2f[i,j] = 0.0
+        j3f[i,j] = 0.0
+        j4f[i,j] = 0.0
+    end end
 
-    j1f_padded[1:Int64(nx/2),1:Int64(ny/2)] = j1f[1:Int64(nx/2),1:Int64(ny/2)]
-    j1f_padded[Int64(nxe-nx/2+1):nxe,1:Int64(ny/2)] = j1f[Int64(nx/2+1):nx,1:Int64(ny/2)]
-    j1f_padded[1:Int64(nx/2),Int64(nye-ny/2+1):nye] = j1f[1:Int64(nx/2),Int64(ny/2+1):ny]
-    j1f_padded[Int64(nxe-nx/2+1):nxe,Int64(nye-ny/2+1):nye] = j1f[Int64(nx/2+1):nx,Int64(ny/2+1):ny]
+    for i = 1:nx for j = Int64(floor(nye/2)+1):Int64(ny-floor(nye/2))
+        j1f[i,j] = 0.0
+        j2f[i,j] = 0.0
+        j3f[i,j] = 0.0
+        j4f[i,j] = 0.0
+    end end
 
-    j2f_padded[1:Int64(nx/2),1:Int64(ny/2)] = j2f[1:Int64(nx/2),1:Int64(ny/2)]
-    j2f_padded[Int64(nxe-nx/2+1):nxe,1:Int64(ny/2)] = j2f[Int64(nx/2+1):nx,1:Int64(ny/2)]
-    j2f_padded[1:Int64(nx/2),Int64(nye-ny/2+1):nye] = j2f[1:Int64(nx/2),Int64(ny/2+1):ny]
-    j2f_padded[Int64(nxe-nx/2+1):nxe,Int64(nye-ny/2+1):nye] = j2f[Int64(nx/2+1):nx,Int64(ny/2+1):ny]
+    j1 = real(ifft(j1f))
+    j2 = real(ifft(j2f))
+    j3 = real(ifft(j3f))
+    j4 = real(ifft(j4f))
+    jacp = zeros(Float64,nx,ny)
 
-    j3f_padded[1:Int64(nx/2),1:Int64(ny/2)] = j3f[1:Int64(nx/2),1:Int64(ny/2)]
-    j3f_padded[Int64(nxe-nx/2+1):nxe,1:Int64(ny/2)] = j3f[Int64(nx/2+1):nx,1:Int64(ny/2)]
-    j3f_padded[1:Int64(nx/2),Int64(nye-ny/2+1):nye] = j3f[1:Int64(nx/2),Int64(ny/2+1):ny]
-    j3f_padded[Int64(nxe-nx/2+1):nxe,Int64(nye-ny/2+1):nye] = j3f[Int64(nx/2+1):nx,Int64(ny/2+1):ny]
-
-    j4f_padded[1:Int64(nx/2),1:Int64(ny/2)] = j4f[1:Int64(nx/2),1:Int64(ny/2)]
-    j4f_padded[Int64(nxe-nx/2+1):nxe,1:Int64(ny/2)] = j4f[Int64(nx/2+1):nx,1:Int64(ny/2)]
-    j4f_padded[1:Int64(nx/2),Int64(nye-ny/2+1):nye] = j4f[1:Int64(nx/2),Int64(ny/2+1):ny]
-    j4f_padded[Int64(nxe-nx/2+1):nxe,Int64(nye-ny/2+1):nye] = j4f[Int64(nx/2+1):nx,Int64(ny/2+1):ny]
-
-    # j1f_padded = j1f_padded*(nxe*nye)/(nx*ny)
-    # j2f_padded = j2f_padded*(nxe*nye)/(nx*ny)
-    # j3f_padded = j3f_padded*(nxe*nye)/(nx*ny)
-    # j4f_padded = j4f_padded*(nxe*nye)/(nx*ny)
-
-    j1 = real(ifft(j1f_padded))
-    j2 = real(ifft(j2f_padded))
-    j3 = real(ifft(j3f_padded))
-    j4 = real(ifft(j4f_padded))
-    jacp = zeros(Float64,nxe,nye)
-
-    for i = 1:nxe for j = 1:nye
+    for i = 1:nx for j = 1:ny
         jacp[i,j] = j1[i,j]*j2[i,j] - j3[i,j]*j4[i,j]
     end end
 
@@ -87,11 +71,11 @@ function jacobiandealiased(nx,ny,dx,dy,wf,k2)
 
     jf = jf*(nx*ny)/(nxe*nye)
 
-    return j1,j2,j3,j4,jacp
+    return j1f_padded, j1f
 end
 
-nx = 4
-ny = 4
+nx = 8
+ny = 8
 x_l = 0.0
 x_r = 2.0*pi
 y_b = 0.0
@@ -140,7 +124,7 @@ for i = 1:nx for j = 1:ny
 end end
 
 uf = fft(u)
-j1,j2,j3,j4,jacp1 = jacobiandealiased(nx,ny,dx,dy,uf,k2)
+j1fp,j1f = jacobiandealiased(nx,ny,dx,dy,uf,k2)
 
 # ux = real(ifft(uxf))
 # uy = real(ifft(uyf))

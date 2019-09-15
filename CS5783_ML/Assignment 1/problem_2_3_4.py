@@ -81,6 +81,8 @@ beta = linear_classifier(xtrain, ytrain)
 
 ypred = np.zeros((ytest.shape))
 ypred = np.dot(xtest,beta)
+
+#%%
 ypred = np.array(ypred > 0.5, dtype=int)
 
 train_c0, train_c1, test_c0, test_c1, test_ic0, test_ic1 = mask_results(xtrain, ytrain, xtest, ytest, ypred)
