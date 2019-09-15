@@ -23,15 +23,13 @@ class KDTree1:
         
         n = (matrix.shape[0])
         
-        if n <= 0:
-            return None
-        
-        matrix = matrix[matrix[:,axis].argsort()]
-        
-        depth = depth + 1
-        self.data = matrix[n//2,:]
-        self.left = KDTree1(matrix[:n//2,:], depth)
-        self.right = KDTree1(matrix[n//2+1:,:], depth)
+        if n > 0:        
+            matrix = matrix[matrix[:,axis].argsort()]
+            
+            depth = depth + 1
+            self.data = matrix[n//2,:]
+            self.left = KDTree1(matrix[:n//2,:], depth)
+            self.right = KDTree1(matrix[n//2+1:,:], depth)
            
     def l2_distane(data1, data2):
         x1, y1 = data1[0], data1[1]
@@ -60,8 +58,11 @@ class KDTree1:
     
     def kdtree_nearest_neighbour(self, test_data, depth = 0):   
         
-        print(self.data)
+        print(self)
         axis = depth % self.k
+        
+        if self.data is None:
+            return None
         
         next_branch = None
         opposite_branch = None
@@ -88,7 +89,7 @@ class KDTree1:
                                nearest)
         
         return nearest
-
+    
 #%%
 train_data = np.random.randn(10,2)
 test_data = np.array([0.5,0.5])
