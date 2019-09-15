@@ -20,6 +20,7 @@ class KDTree1:
         
         n = (matrix.shape[0])
         
+<<<<<<< HEAD
         if n == 0:
             self.data = None
         elif n == 1:
@@ -30,6 +31,9 @@ class KDTree1:
             self.k = matrix.shape[1]
             axis = depth % self.k
         
+=======
+        if n > 0:        
+>>>>>>> 5322e74603a7f38fdce04f6ec2aee5fa220b81e9
             matrix = matrix[matrix[:,axis].argsort()]
             
             depth = depth + 1
@@ -62,12 +66,21 @@ class KDTree1:
         else:
             return point2
     
+<<<<<<< HEAD
     def kdtree_nearest_neighbour(self, test_data, depth = 0, nearest = None):   
 
         if self.data is None:
             return nearest
                
+=======
+    def kdtree_nearest_neighbour(self, test_data, depth = 0):   
+        
+        print(self)
+>>>>>>> 5322e74603a7f38fdce04f6ec2aee5fa220b81e9
         axis = depth % self.k
+        
+        if self.data is None:
+            return None
         
         next_branch = None
         opposite_branch = None
@@ -91,7 +104,7 @@ class KDTree1:
                                nearest)
         
         return nearest
-
+    
 #%%
 train_data = np.random.randn(10,2)
 test_data = np.array([0.5,0.5])
