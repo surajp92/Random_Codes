@@ -6,39 +6,53 @@ Created on Sun Sep 15 11:54:55 2019
 """
 import numpy as np
 import matplotlib.pyplot as plt
+from utils import *
+from scipy.stats import multivariate_normal as mvn
 
 #%%
-training_images_file = open('train-images.idx3-ubyte','rb')
-training_images = training_images_file.read()
-training_images_file.close()
-training_images = bytearray(training_images)
-training_images = training_images[16:]
-
-training_labels_file = open('train-labels.idx1-ubyte','rb')
-training_labels = training_labels_file.read()
-training_labels_file.close()
-training_labels = bytearray(training_labels)
-training_labels = training_labels[8:]
+train_images, train_labels, test_images, test_labels = get_data()
 
 #%%
-training_images = np.array(training_images)
-training_images = training_images.reshape(60000,-1)
-
-training_labels = np.array(training_labels)
-training_labels = training_labels.reshape(60000,-1)
-
-cat, counts = np.unique(training_labels, return_counts=True)
-theta_kd = np.zeros((cat.shape[0],training_images.shape[1]))
+# problem 1
+cat, counts = np.unique(train_labels, return_counts=True)
+theta_kd = np.zeros((cat.shape[0],train_images.shape[1]))
+prior = np.zeros(cat.shape[0])
 for c in cat:
-    current_x = training_images[training_labels[:,0] == c]
-    theta_kd[c,:] = np.sum(current_x,axis=0,keepdims=True)/counts[c]
+    current_x = train_images[train_labels[:,0] == c]
+    theta_kd[c,:] = np.sum(current_x,axis=0,keepdims=True)/counts[c]+1e-3
+    prior[c] = len(train_labels[train_labels[:,0] == c])/len(train_labels)
+    
+n,d = test_images.shape    
+k = len(counts)
+p = np.zeros((n,k))
 
+for j in range(n):
+    for c in cat:
+        mask1 = test_images[j,:] == 1
+        prob1 = test_images[j][mask1]*theta_kd[c][mask1]
+        mask2 = test_images[j,:] == 0
+        prob0 = 1-theta_kd[c][mask2]
+        p[j,c] = np.sum(np.log(prob1)) + np.sum(np.log(prob0)) + np.log(prior[c])
+
+cl = np.argmax(p,axis=1)
+z = test_labels[test_labels[:,0] == cl[:]]
+
+    
 #%%
-training_images[training_images[:,:]>=1] = 1
-training_images[training_images[:,:]<1] = 0
+# problem 2
+mean_kd = np.zeros((cat.shape[0],train_images.shape[1]))
+var_kd = np.zeros((cat.shape[0],train_images.shape[1]))
+for c in cat:
+    current_x = train_images[train_labels[:,0] == c]
+    mean_kd[c,:] = np.mean(current_x,axis=0,keepdims=True)
+    var_kd[c,:] = np.var(current_x,axis=0,keepdims=True)+1e-3
 
+n,d = test_images.shape
+k = len(counts)
+p = np.zeros((n,k))
+for c in cat:
+    p[:,c] = mvn.logpdf(test_images,mean=mean_kd[c,:], cov=var_kd[c,:])
 
-
-#%%
-a = training_images[1].reshape(28,28)
-plt.imshow(a)
+cl = np.argmax(p,axis=1)
+z = test_labels[test_labels[:,0] == cl[:]]
+    
