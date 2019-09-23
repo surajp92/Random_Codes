@@ -95,6 +95,21 @@ def get_data_nt():
     return training_images, training_labels, test_images, test_labels
 
 #%%
+def get_data_problem2():
+    train_images, train_labels, test_images, test_labels = get_data_nt()
+    set1,label1 = train_images[train_labels[:,0]==5], train_labels[train_labels[:,0]==5]
+    set1 = set1[np.random.randint(set1.shape[0],size=1000)]
+    label1 = label1[:1000,:]
+    
+    set2, label2 = train_images[train_labels[:,0]!=5], train_labels[train_labels[:,0]!=5]
+    mask = np.random.randint(set2.shape[0],size=1000)
+    set2 = set2[mask]
+    label2 = label2[mask]
+    label2[:] = 0
+    
+    return set1, label1, set2, label2
+    
+#%%
 def get_data_problem3():
     train_images, train_labels, test_images, test_labels = get_data_nt()    
     set1,label1 = train_images[train_labels[:,0]==1], train_labels[train_labels[:,0]==1]

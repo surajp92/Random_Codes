@@ -43,22 +43,35 @@ cl1 = np.argmax(p,axis=1)
 z1 = test_labels[test_labels[:,0] == cl1[:]]
 
 #%%
-# problem 2
-mean_kd = np.zeros((cat.shape[0],train_images.shape[1]))
-var_kd = np.zeros((cat.shape[0],train_images.shape[1]))
-for c in cat:
-    current_x = train_images[train_labels[:,0] == c]
-    mean_kd[c,:] = np.mean(current_x,axis=0,keepdims=True)
-    var_kd[c,:] = np.var(current_x,axis=0,keepdims=True)+1e-3
+set_cat5, label_cal5, set_other, label_other = get_data_problem2()
+data = np.vstack((set_cat5, set_other))
+label = np.vstack((label_cal5, label_other))
 
-n,d = test_images.shape
-k = len(counts)
-p = np.zeros((n,k))
-for c in cat:
-    p[:,c] = mvn.logpdf(test_images,mean=mean_kd[c,:], cov=var_kd[c,:])
+rand_mask = np.array(random.sample(range(2000), 2000))
 
-cl2 = np.argmax(p,axis=1)
-z2 = test_labels[test_labels[:,0] == cl2[:]]
+data= data[rand_mask]
+label = label[rand_mask]
+
+train_data = data[:1800,:]
+train_label = label[:1800,:]
+
+test_data = data[1800:,:]
+test_label = label[1800:,:]
+
+mean_kd5 = np.mean(train_data[train_label[:,0] == 5],axis=0,keepdims=True)
+mean_kd0 = np.mean(train_data[train_label[:,0] == 0],axis=0,keepdims=True)
+var_5 = np.var(train_data[train_label[:,0] == 5])
+var_0 = np.var(train_data[train_label[:,0] == 0])
+
+tau = 0.1
+term1 = -(test_data-mean_kd5)**2/(2.0*var_5)
+term2 = (test_data-mean_kd0)**2/(2.0*var_0)
+
+sum_prob = term1 + term2 
+decision = np.sum(sum_prob,axis=1,keepdims=True) - 0.5*np.log(var_5/var_0)
+
+pred_label = decision>0
+pred_label = np.where(pred_label==True,5,pred_label)
 
 
 #%%
