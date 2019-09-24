@@ -50,7 +50,7 @@ def problem1():
     #print(tm.time()-time_init)
     print("Naive Bayes accuracy (with Dirichlet prior) = ", accuracy)
 
-problem1()
+#problem1()
 
 #%%
 def problem2():
@@ -111,7 +111,8 @@ def problem2():
     
     plot_problem2(roc)
 
-problem2()
+#problem2()
+
 #%%
 def problem3():
     test_index_set = np.arange(600).reshape(5,-1)
@@ -180,10 +181,8 @@ def problem3():
     
     plot_problem3(test_data, c1, ic1, c2, ic2, c7, ic7)
 
-problem3()
+#problem3()
 
-
-#%%
 
 
 
