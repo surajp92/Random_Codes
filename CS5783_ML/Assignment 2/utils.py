@@ -139,6 +139,21 @@ def get_data_problem3():
     return train_images_new, train_label_new, test_images_new, test_label_new
 
 #%%
+def plot_problem2(roc):
+    print("See plots")
+    fig, axs = plt.subplots(1,1,figsize=(6,5))
+    
+    axs.plot(roc[:,1],roc[:,2],'b-',lw=3)
+    
+    axs.set_ylabel('True positive rate (TPR)')
+    axs.set_xlabel('False positive rate (FPR)')
+    
+    axs.set_title('ROC curve')
+    
+    fig.tight_layout()
+    plt.show()
+    
+#%%
 def plot_problem3(test_data, c1, ic1, c2, ic2, c7, ic7):
     print("See plots")
     fig, axs = plt.subplots(2,3,figsize=(8,6))
