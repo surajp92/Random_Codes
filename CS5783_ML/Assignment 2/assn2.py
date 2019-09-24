@@ -5,6 +5,7 @@ Created on Sun Sep 15 11:54:55 2019
 @author: suraj
 """
 import numpy as np
+from numpy import ma
 import matplotlib.pyplot as plt
 from utils import *
 from scipy.stats import multivariate_normal as mvn
@@ -13,34 +14,49 @@ from sklearn.model_selection import KFold
 import random
 from numpy.random import seed
 seed(222)
-
-#%%
-train_images, train_labels, test_images, test_labels = get_data()
+import time as tm
 
 #%%
 # problem 1
-cat, counts = np.unique(train_labels, return_counts=True)
-theta_kd = np.zeros((cat.shape[0],train_images.shape[1]))
-prior = np.zeros(cat.shape[0])
-for c in cat:
-    current_x = train_images[train_labels[:,0] == c]
-    theta_kd[c,:] = np.sum(current_x,axis=0,keepdims=True)/counts[c]+1e-3
-    prior[c] = len(train_labels[train_labels[:,0] == c])/len(train_labels)
+def problem1():
+    train_images, train_labels, test_images, test_labels = get_data()
     
-n,d = test_images.shape    
-k = len(counts)
-p = np.zeros((n,k))
-
-for j in range(n):
+    cat, counts = np.unique(train_labels, return_counts=True)
+    theta_kd = np.zeros((cat.shape[0],train_images.shape[1]))
+    prior = np.zeros(cat.shape[0])
     for c in cat:
-        mask1 = test_images[j,:] == 1
-        prob1 = test_images[j][mask1]*theta_kd[c][mask1]
-        mask2 = test_images[j,:] == 0
-        prob0 = 1-theta_kd[c][mask2]
-        p[j,c] = np.sum(np.log(prob1)) + np.sum(np.log(prob0)) + np.log(prior[c])
+        current_x = train_images[train_labels[:,0] == c]
+        theta_kd[c,:] = np.sum(current_x,axis=0,keepdims=True)/counts[c] + 1/counts[c] # +1e-3
+        prior[c] = (len(train_labels[train_labels[:,0] == c]))/(len(train_labels))
+        
+    n,d = test_images.shape    
+    k = len(counts)
+    p = np.zeros((n,k))
+    
+    #time_init = tm.time()
+    for j in range(n):
+        for c in cat:
+            mask1 = test_images[j,:] == 1
+            prob1 = test_images[j][mask1]*theta_kd[c][mask1]
+            mask2 = test_images[j,:] == 0
+            prob0 = 1-theta_kd[c][mask2]
+            p[j,c] = np.sum(np.log(prob1)) + np.sum(np.log(prob0)) + np.log(prior[c])
+    
+    #for c in cat:
+    #    mask1 = test_images[:,:] == 0
+    #    prob1 = (np.ma.masked_array(test_images,mask1))*(theta_kd[c,:])
+    #    mask2 = test_images[:,:] == 1
+    #    prob0 = (1-np.ma.masked_array(test_images,mask2))*(1-theta_kd[c,:])
+    #    p[:,c] = np.sum(ma.log(prob1),axis=1) + np.sum(ma.log(prob0),axis=1) + np.log(prior[c])
+            
+    pred_label = np.argmax(p,axis=1)
+    correct_label = test_labels[test_labels[:,0] == pred_label[:]]
+    accuracy = correct_label.shape[0]/test_labels.shape[0]
+    
+    #print(tm.time()-time_init)
+    print("Naive Bayes accuracy (with Dirichlet prior) = ", accuracy)
 
-cl1 = np.argmax(p,axis=1)
-z1 = test_labels[test_labels[:,0] == cl1[:]]
+problem1()
 
 #%%
 set_cat5, label_cal5, set_other, label_other = get_data_problem2()

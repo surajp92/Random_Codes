@@ -10,25 +10,25 @@ import matplotlib.pyplot as plt
 
 #%%
 def get_data():
-    training_images_file = open('train-images.idx3-ubyte','rb')
+    training_images_file = open('train-images-idx3-ubyte','rb')
     training_images = training_images_file.read()
     training_images_file.close()
     training_images = bytearray(training_images)
     training_images = training_images[16:]
     
-    training_labels_file = open('train-labels.idx1-ubyte','rb')
+    training_labels_file = open('train-labels-idx1-ubyte','rb')
     training_labels = training_labels_file.read()
     training_labels_file.close()
     training_labels = bytearray(training_labels)
     training_labels = training_labels[8:]
     
-    test_images_file = open('t10k-images.idx3-ubyte','rb')
+    test_images_file = open('t10k-images-idx3-ubyte','rb')
     test_images = test_images_file.read()
     test_images_file.close()
     test_images = bytearray(test_images)
     test_images = test_images[16:]
     
-    test_labels_file = open('t10k-labels.idx1-ubyte','rb')
+    test_labels_file = open('t10k-labels-idx1-ubyte','rb')
     test_labels = test_labels_file.read()
     test_labels_file.close()
     test_labels = bytearray(test_labels)
@@ -56,25 +56,25 @@ def get_data():
 
 #%%
 def get_data_nt():
-    training_images_file = open('train-images.idx3-ubyte','rb')
+    training_images_file = open('train-images-idx3-ubyte','rb')
     training_images = training_images_file.read()
     training_images_file.close()
     training_images = bytearray(training_images)
     training_images = training_images[16:]
     
-    training_labels_file = open('train-labels.idx1-ubyte','rb')
+    training_labels_file = open('train-labels-idx1-ubyte','rb')
     training_labels = training_labels_file.read()
     training_labels_file.close()
     training_labels = bytearray(training_labels)
     training_labels = training_labels[8:]
     
-    test_images_file = open('t10k-images.idx3-ubyte','rb')
+    test_images_file = open('t10k-images-idx3-ubyte','rb')
     test_images = test_images_file.read()
     test_images_file.close()
     test_images = bytearray(test_images)
     test_images = test_images[16:]
     
-    test_labels_file = open('t10k-labels.idx1-ubyte','rb')
+    test_labels_file = open('t10k-labels-idx1-ubyte','rb')
     test_labels = test_labels_file.read()
     test_labels_file.close()
     test_labels = bytearray(test_labels)
