@@ -13,7 +13,7 @@ from numpy import linalg as LA
 from sklearn.model_selection import KFold
 import random
 from numpy.random import seed
-seed(222)
+seed(1234567)
 import time as tm
 
 #%%
