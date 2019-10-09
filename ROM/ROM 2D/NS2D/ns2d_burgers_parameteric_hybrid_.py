@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy import linalg as LA
 from scipy.integrate import simps
+import pyfftw
 
 from numpy.random import seed
 seed(1)
@@ -27,6 +28,9 @@ import keras.backend as K
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.externals import joblib
 from sklearn.model_selection import train_test_split
+
+from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 font = {'family' : 'Times New Roman',
         'size'   : 14}    
@@ -116,13 +120,6 @@ def create_training_data_lstm(training_set, m, n, lookback):
         xtrain[i,:,:] = a
     return xtrain , ytrain
 
-###############################################################################
-# Burgers Routines
-###############################################################################
-def uexact(x, t, nu):  #Exact Solution [Sirisup]
-    t0 = np.exp(1.0/(8.0*nu))
-    uexact = (x/(t+1.0))/(1.0+np.sqrt((t+1.0)/t0)*np.exp(x*x/(4.0*nu*(t+1.0))))
-    return uexact
 
 
 def rhs(nr, b_l, b_nl, a): # Right Handside of Galerkin Projection
@@ -196,45 +193,172 @@ def pade4dd(u, h, n):
     return udd
 
 
+def plot_3d_surface(x,t,field):
+    
+    fig = plt.figure(figsize=(8,6))
+    ax = fig.add_subplot(111, projection='3d')
+    
+    X, Y = np.meshgrid(t, x)
+    
+    surf = ax.plot_surface(Y, X, field, cmap=plt.cm.viridis,
+                           linewidth=1, antialiased=False,rstride=1,
+                            cstride=1)
+    
+    fig.colorbar(surf, shrink=0.5, aspect=5)
+    
+    fig.tight_layout()
+    plt.show()
+    fig.savefig('3d.pdf')
+
+#%%
+# fast poisson solver using second-order central difference scheme
+def fps(nx, ny, dx, dy, f):
+    epsilon = 1.0e-6
+    aa = -2.0/(dx*dx) - 2.0/(dy*dy)
+    bb = 2.0/(dx*dx)
+    cc = 2.0/(dy*dy)
+    hx = 2.0*np.pi/np.float64(nx)
+    hy = 2.0*np.pi/np.float64(ny)
+    
+    kx = np.empty(nx)
+    ky = np.empty(ny)
+    
+    kx[:] = hx*np.float64(np.arange(0, nx))
+
+    ky[:] = hy*np.float64(np.arange(0, ny))
+    
+    kx[0] = epsilon
+    ky[0] = epsilon
+
+    kx, ky = np.meshgrid(np.cos(kx), np.cos(ky), indexing='ij')
+    
+    data = np.empty((nx,ny), dtype='complex128')
+    data1 = np.empty((nx,ny), dtype='complex128')
+    
+    data[:,:] = np.vectorize(complex)(f[1:nx+1,1:ny+1],0.0)
+
+    a = pyfftw.empty_aligned((nx,ny),dtype= 'complex128')
+    b = pyfftw.empty_aligned((nx,ny),dtype= 'complex128')
+    
+    fft_object = pyfftw.FFTW(a, b, axes = (0,1), direction = 'FFTW_FORWARD')
+    fft_object_inv = pyfftw.FFTW(a, b,axes = (0,1), direction = 'FFTW_BACKWARD')
+    
+    e = fft_object(data)
+    #e = pyfftw.interfaces.scipy_fftpack.fft2(data)
+    
+    e[0,0] = 0.0
+    
+    data1[:,:] = e[:,:]/(aa + bb*kx[:,:] + cc*ky[:,:])
+
+    ut = np.real(fft_object_inv(data1))
+    
+    #periodicity
+    u = np.empty((nx+3,ny+3)) 
+    u[1:nx+1,1:ny+1] = ut
+    u[:,ny+1] = u[:,1]
+    u[nx+1,:] = u[1,:]
+    u[nx+1,ny+1] = u[1,1]
+    return u
+
+#%%
+def nonlinear_term(nx,ny,dx,dy,w,s):
+    '''
+    this function returns -(Jacobian)
+    
+    '''
+    
+    gg = 1.0/(4.0*dx*dy)
+    hh = 1.0/3.0
+    
+    f = np.zeros((nx+3,ny+3))
+    
+    #Arakawa
+    j1 = gg*( (w[2:nx+3,1:ny+2]-w[0:nx+1,1:ny+2])*(s[1:nx+2,2:ny+3]-s[1:nx+2,0:ny+1]) \
+             -(w[1:nx+2,2:ny+3]-w[1:nx+2,0:ny+1])*(s[2:nx+3,1:ny+2]-s[0:nx+1,1:ny+2]))
+
+    j2 = gg*( w[2:nx+3,1:ny+2]*(s[2:nx+3,2:ny+3]-s[2:nx+3,0:ny+1]) \
+            - w[0:nx+1,1:ny+2]*(s[0:nx+1,2:ny+3]-s[0:nx+1,0:ny+1]) \
+            - w[1:nx+2,2:ny+3]*(s[2:nx+3,2:ny+3]-s[0:nx+1,2:ny+3]) \
+            + w[1:nx+2,0:ny+1]*(s[2:nx+3,0:ny+1]-s[0:nx+1,0:ny+1]))
+
+    j3 = gg*( w[2:nx+3,2:ny+3]*(s[1:nx+2,2:ny+3]-s[2:nx+3,1:ny+2]) \
+            - w[0:nx+1,0:ny+1]*(s[0:nx+1,1:ny+2]-s[1:nx+2,0:ny+1]) \
+            - w[0:nx+1,2:ny+3]*(s[1:nx+2,2:ny+3]-s[0:nx+1,1:ny+2]) \
+            + w[2:nx+3,0:ny+1]*(s[2:nx+3,1:ny+2]-s[1:nx+2,0:ny+1]) )
+
+    jac = (j1+j2+j3)*hh
+    
+    f[1:nx+2,1:ny+2] = -jac 
+    
+    f[:,0] = f[:,ny]
+    f[:,ny+2] = f[:,2]
+    
+    f[0,:] = f[nx,:]
+    f[nx+2,:] = f[2,:]
+              
+    return f
+
+def linear_term(nx,ny,dx,dy,re,w):
+    aa = 1.0/(dx*dx)
+    bb = 1.0/(dy*dy)
+    
+    f = np.zeros((nx+3,ny+3))
+    
+    lap = aa*(w[2:nx+3,1:ny+2]-2.0*w[1:nx+2,1:ny+2]+w[0:nx+1,1:ny+2]) \
+        + bb*(w[1:nx+2,2:ny+3]-2.0*w[1:nx+2,1:ny+2]+w[1:nx+2,0:ny+1])
+    
+    f[1:nx+2,1:ny+2] = lap/re
+        
+    f[:,0] = f[:,ny]
+    f[:,ny+2] = f[:,2]
+    
+    f[0,:] = f[nx,:]
+    f[nx+2,:] = f[2,:]
+    
+    return f
+
+
 #%% Main program:
     
 # Inputs
-nx =  1024  #spatial grid number
+nx =  128  #spatial grid number
+ny = 128
 nc = 4     #number of control parameters (nu)
-ns = 100    #number of snapshot per each Parameter 
+ns = 200    #number of snapshot per each Parameter 
 nr = 8      #number of modes
-Re_start = 100.0
-Re_final = 1000.0
+Re_start = 200.0
+Re_final = 800.0
 Re  = np.linspace(Re_start, Re_final, nc) #control Reynolds
 nu = 1/Re   #control dissipation
-lx = 1.0
+lx = 2.0*np.pi
+ly = 2.0*np.pi
 dx = lx/nx
-tm = 1.5
-dt = tm/ns
+dy = ly/ny
+dt = 1e-2
+tm = 20.0
 
 #%% Data generation for training
 x = np.linspace(0, lx, nx+1)
+y = np.linspace(0, ly, ny+1)
 t = np.linspace(0, tm, ns+1)
-um = np.zeros((nx+1, ns+1, nc))
-up = np.zeros((nx+1, ns+1, nc))
-up1 = np.zeros((nx+1, ns+1, nc))
-uo = np.zeros((nx+1, ns+1, nc))
+
+um = np.zeros(((nx+3)*(ny+3), ns+1, nc))
+up = np.zeros(((nx+3)*(ny+3), ns+1, nc))
+uo = np.zeros(((nx+3)*(ny+3), ns+1, nc))
 
 for p in range(0,nc):
     for n in range(0,ns+1):
-        t[n] = dt*n
-        for i in range(nx+1):
-            x[i]=dx*i
-            um[i,n,p]=uexact(x[i],t[n],nu[p]) #snapshots from unperturbed solution
-            up[i,n,p]=0.1*um[i,n,p] #perturbation (unknown physics)
-            #up[i,n,p]=0.1*np.sin(np.pi*x[i])*np.exp(nu[p]*t[n])/(2+np.cos(np.pi*x[i])*np.exp(nu[p]*t[n]))
-            #up[i,n,p]= 0.1*(np.sin(np.pi*x[i]))*t[n]**2*x[i]
-            #up[i,n,p]= 0.1*(np.sin(np.pi*x[i]))*np.exp(x[i]**2*t[n])
-            uo[i,n,p]=um[i,n,p]+up[i,n,p] #snapshots from observed solution
-            #uo[i,n,p]=uexact(x[i],t[n],1.2*nu[p]) # perturbation by using different parameter
+        file_input = "./snapshots/Re_"+str(int(Re[p]))+"/w/w_"+str(int(n))+ ".csv"
+        w = np.genfromtxt(file_input, delimiter=',')
+        
+        um[:,n,p] = np.reshape(w,(nx+3)*(ny+3)) #snapshots from unperturbed solution
+        up[:,n,p] = 0.1*um[:,n,p] #perturbation (unknown physics)
+        uo[:,n,p] = um[:,n,p] + up[:,n,p] #snapshots from observed solution
+
+#plot_3d_surface(x,t,uo[:,:,-1])
 
 #%% POD basis computation
-PHI = np.zeros((nx+1,nr,nc))        
+PHI = np.zeros(((nx+3)*(ny+3),nr,nc))        
        
 L = np.zeros((ns+1,nc)) #Eigenvalues      
 RIC = np.zeros((nc))    #Relative information content
@@ -245,25 +369,25 @@ for p in range(0,nc):
     PHI[:,:,p], L[:,p], RIC[p]  = POD(u, nr) 
 
 #%% Calculating true POD coefficients (observed)
-at = np.zeros((nc,ns+1,nr))
+at = np.zeros((ns+1,nr,nc))
 print('Computing true POD coefficients...')
 for p in range(nc):
-    at[p,:,:] = PODproj(uo[:,:,p],PHI[:,:,p])
+    at[:,:,p] = PODproj(uo[:,:,p],PHI[:,:,p])
 
 #%% Calculating true POD coefficients (exact no perturbation)
-PHIm = np.zeros((nx+1,nr,nc))        
-Lm = np.zeros((ns+1,nc)) #Eigenvalues      
-RICm = np.zeros((nc))    #Relative information content
-
-print('Computing POD basis...')
-for p in range(0,nc):
-    u = um[:,:,p]
-    PHIm[:,:,p], Lm[:,p], RICm[p]  = POD(u, nr) 
-    
-atm = np.zeros((nc,ns+1,nr))
-print('Computing true POD coefficients...')
-for p in range(nc):
-    atm[p,:,:] = PODproj(um[:,:,p],PHIm[:,:,p])
+#PHIm = np.zeros((nx+1,nr,nc))        
+#Lm = np.zeros((ns+1,nc)) #Eigenvalues      
+#RICm = np.zeros((nc))    #Relative information content
+#
+#print('Computing POD basis...')
+#for p in range(0,nc):
+#    u = um[:,:,p]
+#    PHIm[:,:,p], Lm[:,p], RICm[p]  = POD(u, nr) 
+#    
+#atm = np.zeros((nc,ns+1,nr))
+#print('Computing true POD coefficients...')
+#for p in range(nc):
+#    atm[p,:,:] = PODproj(um[:,:,p],PHIm[:,:,p])
 
 #%% Galerkin projection [Fully Intrusive]
 
@@ -307,28 +431,90 @@ for p in range(nc):
         temp= (23/12) * r1 - (16/12) * r2 + (5/12) * r3
         aGP[p,k,:] = aGP[p,k-1,:] + dt*temp 
 
-#%%
-def plot_data(t,at,aGP,atm):
-    fig, ax = plt.subplots(nrows=5,ncols=2,figsize=(12,8))
+#%% modified Galerkin-projection
+b_l = np.zeros((nr,nr,nc))
+b_nl = np.zeros((nr,nr,nr,nc))
+PHId = np.zeros((nx+1,nr,nc))
+PHIdd = np.zeros((nx+1,nr,nc))
+
+for p in range(nc):
+    for i in range(nr):
+        PHIdd[:,i,p] = pade4dd(PHI[:,i,p],dx,nx)
+        PHId[:,i,p] = pade4d(PHI[:,i,p],dx,nx)
+
+# linear term   
+for p in range(nc):
+    for k in range(nr):
+        for i in range(nr):
+            b_l[i,k,p] = nu[p]*np.dot(PHIdd[:,i,p].T , PHI[:,k,p]) 
+                   
+# nonlinear term 
+for p in range(nc):
+    for k in range(nr):
+        for j in range(nr):
+            for i in range(nr):
+                temp = PHI[:,i,p]*PHId[:,j,p]
+                b_nl[i,j,k,p] = - np.dot( temp.T, PHI[:,k,p] ) 
+
+# solving ROM by Adams-Bashforth scheme          
+aGP1 = np.zeros((nc,ns+1,nr))
+for p in range(nc):
+    aGP1[p,0,:] = at[p,0,:nr]
+    aGP1[p,1,:] = at[p,1,:nr]
+    aGP1[p,2,:] = at[p,2,:nr]
+    for k in range(3,ns+1):
+        r1 = rhs(nr, b_l[:,:,p], b_nl[:,:,:,p], at[p,k-1,:])
+        r2 = rhs(nr, b_l[:,:,p], b_nl[:,:,:,p], at[p,k-2,:])
+        r3 = rhs(nr, b_l[:,:,p], b_nl[:,:,:,p], at[p,k-3,:])
+        temp= (23/12) * r1 - (16/12) * r2 + (5/12) * r3
+        
+        aGP1[p,k,:] = at[p,k-1,:] + dt*temp 
+
+#%% plot basis functions
+def plot_data(x,y,PHI):
+    fig, ax = plt.subplots(nrows=4,ncols=2,figsize=(10,12))
     ax = ax.flat
     nrs = at.shape[1]
     
     for i in range(nrs):
-        ax[i].plot(t,at[:,i],'k',label=r'True Values')
-        ax[i].plot(t,atm[:,i],'b',label=r'Exact Values')
-        ax[i].plot(t,aGP[:,i],'r',label=r'True Values')
+        f = np.reshape(PHI[:,i],[nx+3,ny+3])
+        cs = ax[i].contourf(x,y,f[1:nx+2,1:ny+2].T, 5, cmap = 'jet')
+        divider = make_axes_locatable(ax[i])
+        cax = divider.append_axes('right', size='5%', pad=0.1)
+        fig.colorbar(cs,cax=cax,orientation='vertical')
+        ax[i].set_aspect(1.0)
+        ax[i].set_title(r'$\phi_{'+str(i+1) + '}$')
+        
+    fig.tight_layout()    
+    plt.show()
+    fig.savefig('bases_ns2d.pdf')
+
+plot_data(x,y,PHI[:,:,-1])#,aGP[-1,:,:],aGP1[-1,:,:]) 
+
+#%% plot modal coefficients
+def plot_data(t,at):
+    fig, ax = plt.subplots(nrows=4,ncols=2,figsize=(12,8))
+    ax = ax.flat
+    nrs = at.shape[1]
+    
+    for i in range(nrs):
+        for k in range(at.shape[2]):
+            ax[i].plot(t,at[:,i,k],label=str(k))
+            ax[i].legend(loc=0)
+            #ax[i].plot(t,aGP[:,i],'b--',label=r'Exact Values')
+            #ax[i].plot(t,atm[:,i],'r-.',label=r'True Values')
         ax[i].set_xlabel(r'$t$',fontsize=14)
         ax[i].set_ylabel(r'$a_{'+str(i+1) +'}(t)$',fontsize=14)    
     
     fig.tight_layout()
-    #fig.subplots_adjust(bottom=0.15)
     
-    line_labels = ["Perturbation","No perturbation", "GP"]#, "ML-Train", "ML-Test"]
-    plt.figlegend( line_labels,  loc = 'lower center', borderaxespad=0.0, ncol=3, labelspacing=0.)
+#    fig.subplots_adjust(bottom=0.1)
+#    line_labels = ["True","Standard GP", "Modified GP"]#, "ML-Train", "ML-Test"]
+#    plt.figlegend( line_labels,  loc = 'lower center', borderaxespad=0.0, ncol=3, labelspacing=0.)
     plt.show()
-    fig.savefig('modes2.pdf')
+    fig.savefig('modes_ns2d.pdf')
 
-plot_data(t,at[-1,:,:],aGP[-1,:,:],atm[-1,:,:])        
+plot_data(t,at[:,:])#,aGP[-1,:,:],aGP1[-1,:,:])        
 
 #%%
 model = um[:,-1,-1]
@@ -341,7 +527,7 @@ ax.legend()
 plt.show()
 
 #%%
-res_proj = at - aGP
+res_proj = at - aGP1 # difference betwwen true and modified GP
 
 #%% LSTM using 1 parameter + nr modes as input and nr modes as ouput
 # Removing old models
@@ -360,7 +546,7 @@ lookback = 3 #Number of lookbacks
 
 # use xtrain from here
 for p in range(nc):
-    xt, yt = create_training_data_lstm(at[p,:,:], ns+1, nr, lookback)
+    xt, yt = create_training_data_lstm(aGP1[p,:,:], ns+1, nr, lookback)
     if p == 0:
         xtrain = xt
         ytrain = yt
@@ -368,7 +554,7 @@ for p in range(nc):
         xtrain = np.vstack((xtrain,xt))
         ytrain = np.vstack((ytrain,yt))
 
-data = xtrain
+data = xtrain # modified GP as the input data
 
 # use ytrain from here
 for p in range(nc):
@@ -506,6 +692,20 @@ for k in range(3,ns+1):
     r3 = rhs(nr, b_l[:,:], b_nl[:,:,:], aGPtest[k-3,:])
     temp= (23/12) * r1 - (16/12) * r2 + (5/12) * r3
     aGPtest[k,:] = aGPtest[k-1,:] + dt*temp 
+
+#%% modified
+aGPtest2 = np.zeros((ns+1,nr))
+
+aGPtest2[0,:] = aTest[0,:nr]
+aGPtest2[1,:] = aTest[1,:nr]
+aGPtest2[2,:] = aTest[2,:nr]
+
+for k in range(3,ns+1):
+    r1 = rhs(nr, b_l[:,:], b_nl[:,:,:], aTest[k-1,:])
+    r2 = rhs(nr, b_l[:,:], b_nl[:,:,:], aTest[k-2,:])
+    r3 = rhs(nr, b_l[:,:], b_nl[:,:,:], aTest[k-3,:])
+    temp= (23/12) * r1 - (16/12) * r2 + (5/12) * r3
+    aGPtest2[k,:] = aTest[k-1,:] + dt*temp 
         
 #%%
 def plot_data(x,phiTrue,phiTest,phi):
@@ -537,7 +737,7 @@ testing_set = aTest
 m,n = testing_set.shape
 xtest = np.zeros((1,lookback,nr))
 rLSTM = np.zeros((ns+1,nr))
-aGPml = np.zeros((ns+1,nr))
+aGPmlc = np.zeros((ns+1,nr))
 
 #%%
 # Initializing
@@ -546,7 +746,7 @@ for i in range(lookback):
     temp = temp.reshape(1,-1)
     xtest[0,i,:]  = temp
     rLSTM[i, :] = testing_set[i,:] - aGPtest[i,:] 
-    aGPml[i,:] = testing_set[i,:]
+    aGPmlc[i,:] = testing_set[i,:] # modified GP + correction = True
 
 #%%
 # Prediction
@@ -554,53 +754,63 @@ for i in range(lookback,ns+1):
     xtest_sc = scalerIn.transform(xtest[0])
     xtest_sc = xtest_sc.reshape(1,lookback,nr)
     ytest_sc = model.predict(xtest_sc)
-    ytest = scalerOut.inverse_transform(ytest_sc)
+    ytest = scalerOut.inverse_transform(ytest_sc) # residual/ correction
     rLSTM[i, :] = ytest
         
     for k in range(lookback-1):
         xtest[0,k,:] = xtest[0,k+1,:]
-    xtest[0,lookback-1,:] = ytest + aGPtest[i,:]
-    aGPml[i,:] = ytest + aGPtest[i,:]
-
+    
+    r1 = rhs(nr, b_l[:,:], b_nl[:,:,:], aGPmlc[i-1,:])
+    r2 = rhs(nr, b_l[:,:], b_nl[:,:,:], aGPmlc[i-2,:])
+    r3 = rhs(nr, b_l[:,:], b_nl[:,:,:], aGPmlc[i-3,:])
+    temp= (23/12) * r1 - (16/12) * r2 + (5/12) * r3
+    
+    aGPmlc[i,:] = aGPmlc[i-1,:] + dt*temp + ytest
+            
+    xtest[0,lookback-1,:] = aGPmlc[i,:] 
+    
+    
 #%%
 # solving ROM by Adams-Bashforth scheme       
-'''
-aCtest = np.zeros((ns+1,nr))
-aCtest[0,:] = 0.0
-aCtest[1,:] = 0.0
-aCtest[2,:] = 0.0
-for k in range(3,ns+1):
-    r1 = rhs(nr, b_l[:,:], b_nl[:,:,:], aTest[k-1,:])
-    r2 = rhs(nr, b_l[:,:], b_nl[:,:,:], aTest[k-2,:])
-    r3 = rhs(nr, b_l[:,:], b_nl[:,:,:], aTest[k-3,:])
+for i in range(lookback,ns+1):
+    
+    r1 = rhs(nr, b_l[:,:], b_nl[:,:,:], aGPml[i-1,:])
+    r2 = rhs(nr, b_l[:,:], b_nl[:,:,:], aGPml[i-2,:])
+    r3 = rhs(nr, b_l[:,:], b_nl[:,:,:], aGPml[i-3,:])
     temp= (23/12) * r1 - (16/12) * r2 + (5/12) * r3
-    aCtest[k,:] = aTest[k,:] - (aTest[k-1,:] + dt*temp)
-''' 
+    
+    aGPml[k,:] = aGPml[k-1,:] + dt*temp 
+    
+    #aCtest[k,:] = aTest[k,:] - (aTest[k-1,:] + dt*temp)
+
 
 #%%
 #aGPml = aGPtest + rLSTM
 
-def plot_data(x,aTrue,aTest,aGPml):
-    fig, ax = plt.subplots(nrows=5,ncols=2,figsize=(12,8))
+def plot_data(t,aTrue,aGPtest,aGPtest2,aGPmlc):
+    fig, ax = plt.subplots(nrows=4,ncols=2,figsize=(12,8))
     ax = ax.flat
     nrs = aTrue.shape[1]
     
     for i in range(nrs):
-        ax[i].plot(x,aTrue[:,i],'k',label=r'True Values')
-        ax[i].plot(x,aTest[:,i],'b--',label=r'Exact Values')
-        ax[i].plot(x,aGPml[:,i],'r-.',label=r'Exact Values')
+        ax[i].plot(t,aTrue[:,i],'k',label=r'True Values')
+        ax[i].plot(t,aGPtest[:,i],'b--',label=r'Exact Values')
+        ax[i].plot(t,aGPtest2[:,i],'g--',label=r'Exact Values')
+        ax[i].plot(t,aGPmlc[:,i],'m-.',label=r'Exact Values')
         ax[i].set_xlabel(r'$t$',fontsize=14)
         ax[i].set_ylabel(r'$a_{'+str(i+1) +'}(t)$',fontsize=14)    
-    
+        ax[i].set_xlim([0,1.50])
+        ax[i].set_xticks(np.arange(min(t), max(t)+0.5, 0.5))
+        
     fig.tight_layout()
-    #fig.subplots_adjust(bottom=0.15)
+    fig.subplots_adjust(bottom=0.12)
     
-    line_labels = ["Grasman","GP","GP-ML"]#, "ML-Train", "ML-Test"]
-    plt.figlegend( line_labels,  loc = 'lower center', borderaxespad=0.0, ncol=3, labelspacing=0.)
+    line_labels = ["True","Standard GP","Modified GP","GP-ML-Corrected"]#, "ML-Train", "ML-Test"]
+    plt.figlegend( line_labels,  loc = 'lower center', borderaxespad=0.0, ncol=5, labelspacing=0.)
     plt.show()
-    fig.savefig('hybrid_res.pdf')
+    fig.savefig('hybrid2.pdf')
 
-plot_data(t,aTest,aGPtest, aGPml) 
+plot_data(t,aTest,aGPtest,aGPtest2,aGPmlc) 
 
 
  

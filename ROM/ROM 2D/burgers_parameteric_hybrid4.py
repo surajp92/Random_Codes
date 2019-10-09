@@ -28,6 +28,8 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.externals import joblib
 from sklearn.model_selection import train_test_split
 
+from mpl_toolkits.mplot3d import Axes3D
+
 font = {'family' : 'Times New Roman',
         'size'   : 14}    
 plt.rc('font', **font)
@@ -195,7 +197,23 @@ def pade4dd(u, h, n):
     tdma(a, b, c, r, udd, 0, n)
     return udd
 
-
+def plot_3d_surface(x,t,field):
+    
+    fig = plt.figure(figsize=(8,6))
+    ax = fig.add_subplot(111, projection='3d')
+    
+    X, Y = np.meshgrid(t, x)
+    
+    surf = ax.plot_surface(Y, X, field, cmap=plt.cm.viridis,
+                           linewidth=1, antialiased=False,rstride=1,
+                            cstride=1)
+    
+    fig.colorbar(surf, shrink=0.5, aspect=5)
+    
+    fig.tight_layout()
+    plt.show()
+    fig.savefig('3d.pdf')
+    
 #%% Main program:
     
 # Inputs
@@ -233,6 +251,8 @@ for p in range(0,nc):
             uo[i,n,p]=um[i,n,p]+up[i,n,p] #snapshots from observed solution
             #uo[i,n,p]=uexact(x[i],t[n],1.2*nu[p]) # perturbation by using different parameter
 
+#plot_3d_surface(x,t,uo[:,:,-1])
+
 #%% POD basis computation
 PHI = np.zeros((nx+1,nr,nc))        
        
@@ -251,19 +271,19 @@ for p in range(nc):
     at[p,:,:] = PODproj(uo[:,:,p],PHI[:,:,p])
 
 #%% Calculating true POD coefficients (exact no perturbation)
-PHIm = np.zeros((nx+1,nr,nc))        
-Lm = np.zeros((ns+1,nc)) #Eigenvalues      
-RICm = np.zeros((nc))    #Relative information content
-
-print('Computing POD basis...')
-for p in range(0,nc):
-    u = um[:,:,p]
-    PHIm[:,:,p], Lm[:,p], RICm[p]  = POD(u, nr) 
-    
-atm = np.zeros((nc,ns+1,nr))
-print('Computing true POD coefficients...')
-for p in range(nc):
-    atm[p,:,:] = PODproj(um[:,:,p],PHIm[:,:,p])
+#PHIm = np.zeros((nx+1,nr,nc))        
+#Lm = np.zeros((ns+1,nc)) #Eigenvalues      
+#RICm = np.zeros((nc))    #Relative information content
+#
+#print('Computing POD basis...')
+#for p in range(0,nc):
+#    u = um[:,:,p]
+#    PHIm[:,:,p], Lm[:,p], RICm[p]  = POD(u, nr) 
+#    
+#atm = np.zeros((nc,ns+1,nr))
+#print('Computing true POD coefficients...')
+#for p in range(nc):
+#    atm[p,:,:] = PODproj(um[:,:,p],PHIm[:,:,p])
 
 #%% Galerkin projection [Fully Intrusive]
 
@@ -307,28 +327,67 @@ for p in range(nc):
         temp= (23/12) * r1 - (16/12) * r2 + (5/12) * r3
         aGP[p,k,:] = aGP[p,k-1,:] + dt*temp 
 
+#%% modified Galerkin-projection
+b_l = np.zeros((nr,nr,nc))
+b_nl = np.zeros((nr,nr,nr,nc))
+PHId = np.zeros((nx+1,nr,nc))
+PHIdd = np.zeros((nx+1,nr,nc))
+
+for p in range(nc):
+    for i in range(nr):
+        PHIdd[:,i,p] = pade4dd(PHI[:,i,p],dx,nx)
+        PHId[:,i,p] = pade4d(PHI[:,i,p],dx,nx)
+
+# linear term   
+for p in range(nc):
+    for k in range(nr):
+        for i in range(nr):
+            b_l[i,k,p] = nu[p]*np.dot(PHIdd[:,i,p].T , PHI[:,k,p]) 
+                   
+# nonlinear term 
+for p in range(nc):
+    for k in range(nr):
+        for j in range(nr):
+            for i in range(nr):
+                temp = PHI[:,i,p]*PHId[:,j,p]
+                b_nl[i,j,k,p] = - np.dot( temp.T, PHI[:,k,p] ) 
+
+# solving ROM by Adams-Bashforth scheme          
+aGP1 = np.zeros((nc,ns+1,nr))
+for p in range(nc):
+    aGP1[p,0,:] = at[p,0,:nr]
+    aGP1[p,1,:] = at[p,1,:nr]
+    aGP1[p,2,:] = at[p,2,:nr]
+    for k in range(3,ns+1):
+        r1 = rhs(nr, b_l[:,:,p], b_nl[:,:,:,p], at[p,k-1,:])
+        r2 = rhs(nr, b_l[:,:,p], b_nl[:,:,:,p], at[p,k-2,:])
+        r3 = rhs(nr, b_l[:,:,p], b_nl[:,:,:,p], at[p,k-3,:])
+        temp= (23/12) * r1 - (16/12) * r2 + (5/12) * r3
+        
+        aGP1[p,k,:] = aGP1[p,k-1,:] + dt*temp 
+
 #%%
 def plot_data(t,at,aGP,atm):
-    fig, ax = plt.subplots(nrows=5,ncols=2,figsize=(12,8))
+    fig, ax = plt.subplots(nrows=4,ncols=2,figsize=(12,8))
     ax = ax.flat
     nrs = at.shape[1]
     
     for i in range(nrs):
         ax[i].plot(t,at[:,i],'k',label=r'True Values')
-        ax[i].plot(t,atm[:,i],'b',label=r'Exact Values')
-        ax[i].plot(t,aGP[:,i],'r',label=r'True Values')
+        ax[i].plot(t,aGP[:,i],'b--',label=r'Exact Values')
+        ax[i].plot(t,atm[:,i],'r-.',label=r'True Values')
         ax[i].set_xlabel(r'$t$',fontsize=14)
         ax[i].set_ylabel(r'$a_{'+str(i+1) +'}(t)$',fontsize=14)    
     
     fig.tight_layout()
-    #fig.subplots_adjust(bottom=0.15)
     
-    line_labels = ["Perturbation","No perturbation", "GP"]#, "ML-Train", "ML-Test"]
+    fig.subplots_adjust(bottom=0.1)
+    line_labels = ["True","Standard GP", "Modified GP"]#, "ML-Train", "ML-Test"]
     plt.figlegend( line_labels,  loc = 'lower center', borderaxespad=0.0, ncol=3, labelspacing=0.)
     plt.show()
-    fig.savefig('modes2.pdf')
+    fig.savefig('modes_gp.pdf')
 
-plot_data(t,at[-1,:,:],aGP[-1,:,:],atm[-1,:,:])        
+plot_data(t,at[-1,:,:],aGP[-1,:,:],aGP1[-1,:,:])        
 
 #%%
 model = um[:,-1,-1]
@@ -341,7 +400,7 @@ ax.legend()
 plt.show()
 
 #%%
-res_proj = at - aGP
+res_proj = at - aGP1 # difference betwwen true and modified GP
 
 #%% LSTM using 1 parameter + nr modes as input and nr modes as ouput
 # Removing old models
@@ -360,7 +419,7 @@ lookback = 3 #Number of lookbacks
 
 # use xtrain from here
 for p in range(nc):
-    xt, yt = create_training_data_lstm(at[p,:,:], ns+1, nr, lookback)
+    xt, yt = create_training_data_lstm(aGP1[p,:,:], ns+1, nr, lookback)
     if p == 0:
         xtrain = xt
         ytrain = yt
@@ -368,7 +427,7 @@ for p in range(nc):
         xtrain = np.vstack((xtrain,xt))
         ytrain = np.vstack((ytrain,yt))
 
-data = xtrain
+data = xtrain # modified GP as the input data
 
 # use ytrain from here
 for p in range(nc):
@@ -506,6 +565,20 @@ for k in range(3,ns+1):
     r3 = rhs(nr, b_l[:,:], b_nl[:,:,:], aGPtest[k-3,:])
     temp= (23/12) * r1 - (16/12) * r2 + (5/12) * r3
     aGPtest[k,:] = aGPtest[k-1,:] + dt*temp 
+
+#%% modified
+aGPtest2 = np.zeros((ns+1,nr))
+
+aGPtest2[0,:] = aTest[0,:nr]
+aGPtest2[1,:] = aTest[1,:nr]
+aGPtest2[2,:] = aTest[2,:nr]
+
+for k in range(3,ns+1):
+    r1 = rhs(nr, b_l[:,:], b_nl[:,:,:], aTest[k-1,:])
+    r2 = rhs(nr, b_l[:,:], b_nl[:,:,:], aTest[k-2,:])
+    r3 = rhs(nr, b_l[:,:], b_nl[:,:,:], aTest[k-3,:])
+    temp= (23/12) * r1 - (16/12) * r2 + (5/12) * r3
+    aGPtest2[k,:] = aGPtest2[k-1,:] + dt*temp 
         
 #%%
 def plot_data(x,phiTrue,phiTest,phi):
@@ -538,6 +611,7 @@ m,n = testing_set.shape
 xtest = np.zeros((1,lookback,nr))
 rLSTM = np.zeros((ns+1,nr))
 aGPml = np.zeros((ns+1,nr))
+aGPmlc = np.zeros((ns+1,nr))
 
 #%%
 # Initializing
@@ -546,7 +620,8 @@ for i in range(lookback):
     temp = temp.reshape(1,-1)
     xtest[0,i,:]  = temp
     rLSTM[i, :] = testing_set[i,:] - aGPtest[i,:] 
-    aGPml[i,:] = testing_set[i,:]
+    aGPml[i,:] = testing_set[i,:] # modified GP
+    aGPmlc[i,:] = testing_set[i,:] # modified GP + correction = True
 
 #%%
 # Prediction
@@ -554,53 +629,66 @@ for i in range(lookback,ns+1):
     xtest_sc = scalerIn.transform(xtest[0])
     xtest_sc = xtest_sc.reshape(1,lookback,nr)
     ytest_sc = model.predict(xtest_sc)
-    ytest = scalerOut.inverse_transform(ytest_sc)
+    ytest = scalerOut.inverse_transform(ytest_sc) # residual/ correction
     rLSTM[i, :] = ytest
         
     for k in range(lookback-1):
         xtest[0,k,:] = xtest[0,k+1,:]
-    xtest[0,lookback-1,:] = ytest + aGPtest[i,:]
-    aGPml[i,:] = ytest + aGPtest[i,:]
-
+    
+    r1 = rhs(nr, b_l[:,:], b_nl[:,:,:], aGPmlc[i-1,:])
+    r2 = rhs(nr, b_l[:,:], b_nl[:,:,:], aGPmlc[i-2,:])
+    r3 = rhs(nr, b_l[:,:], b_nl[:,:,:], aGPmlc[i-3,:])
+    temp= (23/12) * r1 - (16/12) * r2 + (5/12) * r3
+    
+    aGPml[i,:] = aGPml[i-1,:] + dt*temp 
+    
+    aGPmlc[i,:] = aGPml[i,:] + ytest # True = modified GP + correction (LSTM learned)
+        
+    xtest[0,lookback-1,:] = aGPml[i,:] 
+    
+    
 #%%
 # solving ROM by Adams-Bashforth scheme       
-'''
-aCtest = np.zeros((ns+1,nr))
-aCtest[0,:] = 0.0
-aCtest[1,:] = 0.0
-aCtest[2,:] = 0.0
-for k in range(3,ns+1):
-    r1 = rhs(nr, b_l[:,:], b_nl[:,:,:], aTest[k-1,:])
-    r2 = rhs(nr, b_l[:,:], b_nl[:,:,:], aTest[k-2,:])
-    r3 = rhs(nr, b_l[:,:], b_nl[:,:,:], aTest[k-3,:])
+for i in range(lookback,ns+1):
+    
+    r1 = rhs(nr, b_l[:,:], b_nl[:,:,:], aGPml[i-1,:])
+    r2 = rhs(nr, b_l[:,:], b_nl[:,:,:], aGPml[i-2,:])
+    r3 = rhs(nr, b_l[:,:], b_nl[:,:,:], aGPml[i-3,:])
     temp= (23/12) * r1 - (16/12) * r2 + (5/12) * r3
-    aCtest[k,:] = aTest[k,:] - (aTest[k-1,:] + dt*temp)
-''' 
+    
+    aGPml[k,:] = aGPml[k-1,:] + dt*temp 
+    
+    #aCtest[k,:] = aTest[k,:] - (aTest[k-1,:] + dt*temp)
+
 
 #%%
 #aGPml = aGPtest + rLSTM
 
-def plot_data(x,aTrue,aTest,aGPml):
-    fig, ax = plt.subplots(nrows=5,ncols=2,figsize=(12,8))
+def plot_data(t,aTrue,aGPtest,aGPtest2,aGPml,aGPml1):
+    fig, ax = plt.subplots(nrows=4,ncols=2,figsize=(12,8))
     ax = ax.flat
     nrs = aTrue.shape[1]
     
     for i in range(nrs):
-        ax[i].plot(x,aTrue[:,i],'k',label=r'True Values')
-        ax[i].plot(x,aTest[:,i],'b--',label=r'Exact Values')
-        ax[i].plot(x,aGPml[:,i],'r-.',label=r'Exact Values')
+        ax[i].plot(t,aTrue[:,i],'k',label=r'True Values')
+        ax[i].plot(t,aGPtest[:,i],'b--',label=r'Exact Values')
+        ax[i].plot(t,aGPtest2[:,i],'g--',label=r'Exact Values')
+        ax[i].plot(t,aGPml[:,i],'r-.',label=r'Exact Values')
+        ax[i].plot(t,aGPml1[:,i],'m-.',label=r'Exact Values')
         ax[i].set_xlabel(r'$t$',fontsize=14)
         ax[i].set_ylabel(r'$a_{'+str(i+1) +'}(t)$',fontsize=14)    
-    
+        ax[i].set_xlim([0,1.50])
+        ax[i].set_xticks(np.arange(min(t), max(t)+0.5, 0.5))
+        
     fig.tight_layout()
-    #fig.subplots_adjust(bottom=0.15)
+    fig.subplots_adjust(bottom=0.12)
     
-    line_labels = ["Grasman","GP","GP-ML"]#, "ML-Train", "ML-Test"]
-    plt.figlegend( line_labels,  loc = 'lower center', borderaxespad=0.0, ncol=3, labelspacing=0.)
+    line_labels = ["True","Standard GP","Modified GP","Modified GP-ML","Modified GP-ML-Corrected"]#, "ML-Train", "ML-Test"]
+    plt.figlegend( line_labels,  loc = 'lower center', borderaxespad=0.0, ncol=6, labelspacing=0.)
     plt.show()
-    fig.savefig('hybrid_res.pdf')
+    fig.savefig('hybrid.pdf')
 
-plot_data(t,aTest,aGPtest, aGPml) 
+plot_data(t,aTest,aGPtest,aGPtest2,aGPml,aGPmlc) 
 
 
  
