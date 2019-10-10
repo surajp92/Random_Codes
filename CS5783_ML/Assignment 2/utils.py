@@ -115,25 +115,22 @@ def get_data_problem3():
     set1,label1 = train_images[train_labels[:,0]==1], train_labels[train_labels[:,0]==1]
     set2,label2 = train_images[train_labels[:,0]==2], train_labels[train_labels[:,0]==2]
     set7,label7 = train_images[train_labels[:,0]==7], train_labels[train_labels[:,0]==7]
-    set1 = set1[np.random.randint(set1.shape[0],size=200)]
-    set2 = set2[np.random.randint(set1.shape[0],size=200)]
-    set7 = set7[np.random.randint(set1.shape[0],size=200)]
+    set1 = set1[np.random.randint(set1.shape[0],size=250)]
+    set2 = set2[np.random.randint(set1.shape[0],size=250)]
+    set7 = set7[np.random.randint(set1.shape[0],size=250)]
     label1 = label1[:200,:]
     label2 = label2[:200,:]
     label7 = label7[:200,:]
-    train_images_new = np.vstack((set1,set2,set7))
+    train_images_new = np.vstack((set1[:200,:],set2[:200,:],set7[:200,:]))
     train_label_new = np.vstack((label1,label2,label7))
     
-    set1,label1 = test_images[test_labels[:,0]==1], test_labels[test_labels[:,0]==1]
-    set2,label2 = test_images[test_labels[:,0]==2], test_labels[test_labels[:,0]==2]
-    set7,label7 = test_images[test_labels[:,0]==7], test_labels[test_labels[:,0]==7]
-    set1 = set1[np.random.randint(set1.shape[0],size=50)]
-    set2 = set2[np.random.randint(set1.shape[0],size=50)]
-    set7 = set7[np.random.randint(set1.shape[0],size=50)]
+    label1 = test_labels[test_labels[:,0]==1]
+    label2 = test_labels[test_labels[:,0]==2]
+    label7 = test_labels[test_labels[:,0]==7]
     label1 = label1[:50,:]
     label2 = label2[:50,:]
     label7 = label7[:50,:]
-    test_images_new = np.vstack((set1,set2,set7))
+    test_images_new = np.vstack((set1[200:,:],set2[200:,:],set7[200:,:]))
     test_label_new = np.vstack((label1,label2,label7))
     
     return train_images_new, train_label_new, test_images_new, test_label_new
@@ -160,6 +157,7 @@ def plot_problem3(test_data, c1, ic1, c2, ic2, c7, ic7):
     
     axs[0,0].imshow(test_data[c1,:].reshape(28,28))
     axs[0,0].set_title('Correctly classified 1')
+    #if c1 !=ic1:
     axs[1,0].imshow(test_data[ic1,:].reshape(28,28))
     axs[1,0].set_title('Incorrectly classified 1')
     
