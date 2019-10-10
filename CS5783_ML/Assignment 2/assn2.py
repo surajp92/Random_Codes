@@ -180,11 +180,10 @@ def problem3():
     c7, ic7 = np.argmax(plot_mask[100:])+100, np.argmin(plot_mask[100:])+100
     
     plot_problem3(test_data, c1, ic1, c2, ic2, c7, ic7)
+    
+    print("For some seed values, number 1 is correctly predicted for all test data. In that case there is no incorrectly classified 1")
 
 #problem3()
-
-
-
 
 
 
