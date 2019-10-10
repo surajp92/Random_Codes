@@ -374,21 +374,6 @@ print('Computing true POD coefficients...')
 for p in range(nc):
     at[:,:,p] = PODproj(uo[:,:,p],PHI[:,:,p])
 
-#%% Calculating true POD coefficients (exact no perturbation)
-#PHIm = np.zeros((nx+1,nr,nc))        
-#Lm = np.zeros((ns+1,nc)) #Eigenvalues      
-#RICm = np.zeros((nc))    #Relative information content
-#
-#print('Computing POD basis...')
-#for p in range(0,nc):
-#    u = um[:,:,p]
-#    PHIm[:,:,p], Lm[:,p], RICm[p]  = POD(u, nr) 
-#    
-#atm = np.zeros((nc,ns+1,nr))
-#print('Computing true POD coefficients...')
-#for p in range(nc):
-#    atm[p,:,:] = PODproj(um[:,:,p],PHIm[:,:,p])
-
 #%% Galerkin projection [Fully Intrusive]
 
 ###############################
@@ -396,19 +381,27 @@ for p in range(nc):
 ###############################
 b_l = np.zeros((nr,nr,nc))
 b_nl = np.zeros((nr,nr,nr,nc))
-PHId = np.zeros((nx+1,nr,nc))
-PHIdd = np.zeros((nx+1,nr,nc))
+linear_phi = np.zeros(((nx+3)*(ny+3),nr,nc))
+nonlinear_phi = np.zeros(((nx+3)*(ny+3),nr,nc))
 
 for p in range(nc):
     for i in range(nr):
-        PHIdd[:,i,p] = pade4dd(PHI[:,i,p],dx,nx)
-        PHId[:,i,p] = pade4d(PHI[:,i,p],dx,nx)
+        phi_w = np.reshape(PHI[:,i,p],[nx+3,ny+3])
+        
+        lin_term = linear_term(nx,ny,dx,dy,Re[p],phi_w)
+        linear_phi[:,i,p] = np.reshape(lin_term,(nx+3)*(ny+3))
+        
+        phi_s = fps(nx, ny, dx, dy, phi_w)
+        
+        nonlin_term = nonlinear_term(nx,ny,dx,dy,phi_w,phi_s)
+        nonlinear_phi[:,i,p] = np.reshape(nonlin_term,(nx+3)*(ny+3))
 
+#%%
 # linear term   
 for p in range(nc):
     for k in range(nr):
         for i in range(nr):
-            b_l[i,k,p] = nu[p]*np.dot(PHIdd[:,i,p].T , PHI[:,k,p]) 
+            b_l[i,k,p] = nu[p]*np.dot(linear_phi[:,i,p].T , PHI[:,k,p]) 
                    
 # nonlinear term 
 for p in range(nc):
@@ -419,17 +412,17 @@ for p in range(nc):
                 b_nl[i,j,k,p] = - np.dot( temp.T, PHI[:,k,p] ) 
 
 # solving ROM by Adams-Bashforth scheme          
-aGP = np.zeros((nc,ns+1,nr))
+aGP = np.zeros((ns+1,nr,nc))
 for p in range(nc):
-    aGP[p,0,:] = at[p,0,:nr]
-    aGP[p,1,:] = at[p,1,:nr]
-    aGP[p,2,:] = at[p,2,:nr]
+    aGP[0,:,p] = at[0,:nr,p]
+    aGP[1,:,p] = at[1,:nr,p]
+    aGP[2,:,p] = at[2,:nr,p]
     for k in range(3,ns+1):
-        r1 = rhs(nr, b_l[:,:,p], b_nl[:,:,:,p], aGP[p,k-1,:])
-        r2 = rhs(nr, b_l[:,:,p], b_nl[:,:,:,p], aGP[p,k-2,:])
-        r3 = rhs(nr, b_l[:,:,p], b_nl[:,:,:,p], aGP[p,k-3,:])
+        r1 = rhs(nr, b_l[:,:,p], b_nl[:,:,:,p], aGP[k-1,:,p])
+        r2 = rhs(nr, b_l[:,:,p], b_nl[:,:,:,p], aGP[k-2,:,p])
+        r3 = rhs(nr, b_l[:,:,p], b_nl[:,:,:,p], aGP[k-3,:,p])
         temp= (23/12) * r1 - (16/12) * r2 + (5/12) * r3
-        aGP[p,k,:] = aGP[p,k-1,:] + dt*temp 
+        aGP[k,:,p] = aGP[k-1,:,p] + dt*temp 
 
 #%% modified Galerkin-projection
 b_l = np.zeros((nr,nr,nc))
@@ -457,28 +450,28 @@ for p in range(nc):
                 b_nl[i,j,k,p] = - np.dot( temp.T, PHI[:,k,p] ) 
 
 # solving ROM by Adams-Bashforth scheme          
-aGP1 = np.zeros((nc,ns+1,nr))
+aGP1 = np.zeros((ns+1,nr,nc))
 for p in range(nc):
-    aGP1[p,0,:] = at[p,0,:nr]
-    aGP1[p,1,:] = at[p,1,:nr]
-    aGP1[p,2,:] = at[p,2,:nr]
+    aGP1[0,:,p] = at[0,:nr,p]
+    aGP1[1,:,p] = at[1,:nr,p]
+    aGP1[2,:,p] = at[2,:nr,p]
     for k in range(3,ns+1):
-        r1 = rhs(nr, b_l[:,:,p], b_nl[:,:,:,p], at[p,k-1,:])
-        r2 = rhs(nr, b_l[:,:,p], b_nl[:,:,:,p], at[p,k-2,:])
-        r3 = rhs(nr, b_l[:,:,p], b_nl[:,:,:,p], at[p,k-3,:])
+        r1 = rhs(nr, b_l[:,:,p], b_nl[:,:,:,p], at[k-1,:,p])
+        r2 = rhs(nr, b_l[:,:,p], b_nl[:,:,:,p], at[k-2,:,p])
+        r3 = rhs(nr, b_l[:,:,p], b_nl[:,:,:,p], at[k-3,:,p])
         temp= (23/12) * r1 - (16/12) * r2 + (5/12) * r3
         
-        aGP1[p,k,:] = at[p,k-1,:] + dt*temp 
+        aGP1[k,:,p] = at[k-1,:,p] + dt*temp 
 
 #%% plot basis functions
 def plot_data(x,y,PHI):
-    fig, ax = plt.subplots(nrows=4,ncols=2,figsize=(10,12))
+    fig, ax = plt.subplots(nrows=4,ncols=2,figsize=(10,14))
     ax = ax.flat
     nrs = at.shape[1]
     
     for i in range(nrs):
         f = np.reshape(PHI[:,i],[nx+3,ny+3])
-        cs = ax[i].contourf(x,y,f[1:nx+2,1:ny+2].T, 5, cmap = 'jet')
+        cs = ax[i].contour(x,y,f[1:nx+2,1:ny+2].T, 10, cmap = 'viridis')
         divider = make_axes_locatable(ax[i])
         cax = divider.append_axes('right', size='5%', pad=0.1)
         fig.colorbar(cs,cax=cax,orientation='vertical')
@@ -514,7 +507,7 @@ def plot_data(t,at):
     plt.show()
     fig.savefig('modes_ns2d.pdf')
 
-plot_data(t,at[:,:])#,aGP[-1,:,:],aGP1[-1,:,:])        
+plot_data(t,at[:,:])#,aGP[-1,:,:],aGP1[-1,:,:])       
 
 #%%
 model = um[:,-1,-1]
@@ -535,10 +528,10 @@ if os.path.isfile('burgers_integrator_LSTM.hd5'):
     os.remove('burgers_integrator_LSTM.hd5')
     
 # Stacking data
-a = np.zeros((nc,ns+1,nr+1))
+a = np.zeros((ns+1,nr+1,nc))
 for p in range(nc):
-    a[p,:,0] = nu[p]*np.ones(ns+1)
-    a[p,:,1:] = res_proj[p,:,:]
+    a[:,0,p] = nu[p]*np.ones(ns+1)
+    a[:,1:,p] = res_proj[:,:,p]
    
 
 # Create training data for LSTM
@@ -546,7 +539,7 @@ lookback = 3 #Number of lookbacks
 
 # use xtrain from here
 for p in range(nc):
-    xt, yt = create_training_data_lstm(aGP1[p,:,:], ns+1, nr, lookback)
+    xt, yt = create_training_data_lstm(aGP1[:,:,p], ns+1, nr, lookback)
     if p == 0:
         xtrain = xt
         ytrain = yt
@@ -558,7 +551,7 @@ data = xtrain # modified GP as the input data
 
 # use ytrain from here
 for p in range(nc):
-    xt, yt = create_training_data_lstm(res_proj[p,:,:], ns+1, nr, lookback)
+    xt, yt = create_training_data_lstm(res_proj[:,:,p], ns+1, nr, lookback)
     if p == 0:
         xtrain = xt
         ytrain = yt
@@ -769,21 +762,6 @@ for i in range(lookback,ns+1):
             
     xtest[0,lookback-1,:] = aGPmlc[i,:] 
     
-    
-#%%
-# solving ROM by Adams-Bashforth scheme       
-for i in range(lookback,ns+1):
-    
-    r1 = rhs(nr, b_l[:,:], b_nl[:,:,:], aGPml[i-1,:])
-    r2 = rhs(nr, b_l[:,:], b_nl[:,:,:], aGPml[i-2,:])
-    r3 = rhs(nr, b_l[:,:], b_nl[:,:,:], aGPml[i-3,:])
-    temp= (23/12) * r1 - (16/12) * r2 + (5/12) * r3
-    
-    aGPml[k,:] = aGPml[k-1,:] + dt*temp 
-    
-    #aCtest[k,:] = aTest[k,:] - (aTest[k-1,:] + dt*temp)
-
-
 #%%
 #aGPml = aGPtest + rLSTM
 
@@ -812,91 +790,4 @@ def plot_data(t,aTrue,aGPtest,aGPtest2,aGPmlc):
 
 plot_data(t,aTest,aGPtest,aGPtest2,aGPmlc) 
 
-
  
-#%% Galerkin projection [Fully Intrusive]
-
-###############################
-# Galerkin projection with nr
-###############################
-b_l = np.zeros((nr,nr))
-b_nl = np.zeros((nr,nr,nr))
-PHId = np.zeros((nx+1,nr))
-PHIdd = np.zeros((nx+1,nr))
-
-for i in range(nr):
-    PHIdd[:,i] = pade4dd(PHItest[:,i],dx,nx)
-    PHId[:,i] = pade4d(PHItest[:,i],dx,nx)
-
-# linear term   
-for k in range(nr):
-    for i in range(nr):
-        b_l[i,k] = nuTest*np.dot(PHIdd[:,i].T , PHItest[:,k]) 
-                   
-# nonlinear term 
-for k in range(nr):
-    for j in range(nr):
-        for i in range(nr):
-            temp = PHItest[:,i]*PHId[:,j]
-            b_nl[i,j,k] = - np.dot( temp.T, PHItest[:,k] ) 
-
-# solving ROM             
-aGP = np.zeros((ns+1,nr))
-aGP[0,:] = aTest[0,:nr]
-aGP[1,:] = aTest[1,:nr]
-aGP[2,:] = aTest[2,:nr]
-for k in range(3,ns+1):
-    r1 = rhs(nr, b_l, b_nl, aGP[k-1,:])
-    r2 = rhs(nr, b_l, b_nl, aGP[k-2,:])
-    r3 = rhs(nr, b_l, b_nl, aGP[k-3,:])
-    temp= (23/12) * r1 - (16/12) * r2 + (5/12) * r3
-    aGP[k,:] = aGP[k-1,:] + dt*temp 
-
-###############################
-# Galerkin projection with nrs
-###############################
-b_l = np.zeros((nrs,nrs))
-b_nl = np.zeros((nrs,nrs,nrs))
-PHId = np.zeros((nx+1,nrs))
-PHIdd = np.zeros((nx+1,nrs))
-
-for i in range(nrs):
-    PHIdd[:,i] = pade4dd(PHItest[:,i],dx,nx)
-    PHId[:,i] = pade4d(PHItest[:,i],dx,nx)
-
-# linear term   
-for k in range(nrs):
-    for i in range(nrs):
-        b_l[i,k] = nuTest*np.dot(PHIdd[:,i].T , PHItest[:,k]) 
-                   
-# nonlinear term 
-for k in range(nrs):
-    for j in range(nrs):
-        for i in range(nrs):
-            temp = PHItest[:,i]*PHId[:,j]
-            b_nl[i,j,k] = - np.dot( temp.T, PHItest[:,k] ) 
-
-# solving ROM             
-aGPs = np.zeros((ns+1,nrs))
-aGPs[0,:] = aTest[0,:nrs]
-aGPs[1,:] = aTest[1,:nrs]
-aGPs[2,:] = aTest[2,:nrs]
-for k in range(3,ns+1):
-    r1 = rhs(nrs, b_l, b_nl, aGPs[k-1,:])
-    r2 = rhs(nrs, b_l, b_nl, aGPs[k-2,:])
-    r3 = rhs(nrs, b_l, b_nl, aGPs[k-3,:])
-    temp= (23/12) * r1 - (16/12) * r2 + (5/12) * r3
-    aGPs[k,:] = aGPs[k-1,:] + dt*temp           
-
-#%% Galerkin Projection + LSTM [Hybrid]
-aHyb = np.hstack(( aGP , aLSTM[:,nr:] ))
-    
-
-##%%
-#uPOD = PODrec(at[:,:2*nr,0],PHIt[:,:2*nr,0])
-#uGP = PODrec(aGP[:,:,0],PHI[:,:,0])
-#uhybrid = PODrec(aGP[:,:,0],PHI[:,:,0]) + PODrec(at[:,nr:2*nr,0],PHIt[:,nr:2*nr,0])
-#uex  = ue[:,-1,0]
-
-
-
