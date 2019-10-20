@@ -9,6 +9,7 @@ Created on Sat Oct 19 10:58:10 2019
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy import linalg as LA
+from scipy.optimize import minimize
 
 font = {'family' : 'Times New Roman',
         'size'   : 12}    
@@ -150,3 +151,158 @@ def problem2():
 problem2()
 
 #%%
+def problem3():
+    data = np.loadtxt('crash.txt')
+    m,n = data.shape
+    
+    mask = np.linspace(0,m-1,m)%2
+    
+    training_set = data[mask==0]
+    validation_set = data[mask==1]
+    
+    beta = 1/400
+    alpha = np.logspace(-8,0,100)
+    
+    error_train = np.zeros((alpha.shape[0],1))
+    error_val = np.zeros((alpha.shape[0],1))
+    
+    L = 50
+    
+    for k in range(alpha.shape[0]):
+        
+        phi_train = np.zeros((training_set.shape[0],L))
+        phi_val = np.zeros((validation_set.shape[0],L))
+        phi_data = np.zeros((data.shape[0],L))
+            
+        mean = np.linspace(0,60,L).reshape(1,-1) 
+        std = mean[0,1] - mean[0,0]
+           
+        phi_train = np.exp(-(training_set[:,0].reshape(-1,1) - mean)**2/(2*std**2))
+        phi_val = np.exp(-(validation_set[:,0].reshape(-1,1) - mean)**2/(2*std**2))
+        phi_data = np.exp(-(data[:,0].reshape(-1,1) - mean)**2/(2*std**2))
+        
+        a = np.dot(phi_train.T,phi_train) + alpha[k]/beta*np.eye(L)
+        b = np.dot(phi_train.T,training_set[:,1])
+        w = np.linalg.solve(a, b)
+        
+        that_train = np.dot(phi_train,w)
+        that_val = np.dot(phi_val,w)
+            
+        error_train[k] = LA.norm(training_set[:,1] - that_train)
+        error_val[k] = LA.norm(validation_set[:,1] - that_val)
+    
+    alpha_optimal = alpha[np.argmin(error_val)]
+    
+    print('Best alpha = ', alpha_optimal)
+    
+    mean = np.linspace(0,60,L).reshape(1,-1)
+    std = mean[0,1] - mean[0,0]
+       
+    phi_train = np.exp(-(training_set[:,0].reshape(-1,1) - mean)**2/(2*std**2))
+    phi_data = np.exp(-(data[:,0].reshape(-1,1) - mean)**2/(2*std**2))
+    
+    a = np.dot(phi_train.T,phi_train) + alpha_optimal/beta*np.eye(L)
+    b = np.dot(phi_train.T,training_set[:,1])
+    w = np.linalg.solve(a, b)
+    
+    pred = np.dot(phi_data,w)
+    
+    fig, ax = plt.subplots(nrows=1,ncols=1,figsize=(10,4))
+        
+    ax.plot(data[:,0],pred,'b',lw=2,label='Prediction')
+    ax.scatter(training_set[:,0],training_set[:,1],color='r',label='Training set')
+    ax.scatter(validation_set[:,0],validation_set[:,1],color='k',label='Validation set')
+    ax.legend(loc=4)
+    
+    plt.show()
+
+problem3()
+
+#%%
+def flower_to_float(s):
+    d = {b'Iris-setosa':0.,b'Iris-versicolor':1.,b'Iris-virginica':2.}
+    return d[s]
+
+irises = np.loadtxt('iris.data',delimiter=',',converters={4:flower_to_float})
+
+data = irises[:,:-1]
+data = np.column_stack((np.ones(data.shape[0]),data))
+
+#%%
+labels = irises[:,-1].astype(int)
+
+onehot = np.zeros((labels.shape[0], 3))
+onehot[np.arange(labels.shape[0]), labels[:]] = 1
+
+ind = np.arange(25)
+masktrain = np.hstack((ind,ind+50,ind+100))
+ind = np.arange(25,50)
+masktest = np.hstack((ind,ind+50,ind+100))
+
+xtrain = data[masktrain]
+ytrain = onehot[masktrain]
+
+xtest = data[masktest]
+ytest = onehot[masktest]
+
+alpha = 0.003
+
+def f(w):
+    prior = alpha*np.dot(w.T,w)
+    
+    num = 0.0
+    for k in range(3):
+        wk = w[k*5:k*5+5]
+        temp = np.sum(ytrain[:,k]*np.dot(wk.T,xtrain.T))
+        num = num + temp
+    
+    denom = 0.0 
+    for k in range(3):
+        wk = w[k*5:k*5+5]
+        temp = np.dot(wk.T,xtrain.T)
+        denom = denom + temp
+    
+    denom = np.sum(np.log(denom))
+    
+    return prior - (num - denom)
+
+w_init = np.ones(15)
+w_hat = minimize(f, w_init).x
+
+w_hat = w_hat.reshape(3,-1)
+
+#%%
+z = np.dot(w_hat,xtest.T).T
+
+s = np.exp(z)/((np.sum(np.exp(z),axis=1)).reshape(-1,1))
+
+
+#%%
+w = np.ones(15)
+num = 0.0
+for k in range(3):
+    wk = w[k*5:k*5+5]
+    temp = np.sum(ytrain[:,k]*np.dot(wk.T,xtrain.T))
+    num = num + temp
+
+denom = 0.0 
+for k in range(3):
+    wk = w[k*5:k*5+5]
+    temp = np.dot(wk.T,xtrain.T)
+    denom = denom + temp
+
+denom = np.sum(np.log(denom))
+
+#%%
+b = np.log(np.dot(w[0:5].T,xtrain.T))
+
+
+
+
+
+
+
+
+
+
+
