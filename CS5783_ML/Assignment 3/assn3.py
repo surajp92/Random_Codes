@@ -52,8 +52,8 @@ def problem1():
         that_train = np.dot(phi_train[:,:l+1],w)
         that_val = np.dot(phi_val[:,:l+1],w)
         
-        error_train[l] = LA.norm(training_set[:,1] - that_train)
-        error_val[l] = LA.norm(validation_set[:,1] - that_val)
+        error_train[l] = np.sqrt(((training_set[:,1] - that_train)**2).mean(axis=0))
+        error_val[l] = np.sqrt(((validation_set[:,1] - that_val)**2).mean(axis=0))       
     
     l_optimal = np.argmin(error_val) 
     a = np.dot(phi_train[:,:l_optimal+1].T,phi_train[:,:l_optimal+1])
@@ -117,8 +117,8 @@ def problem2():
         that_train = np.dot(phi_train,w)
         that_val = np.dot(phi_val,w)
             
-        error_train[k] = LA.norm(training_set[:,1] - that_train)
-        error_val[k] = LA.norm(validation_set[:,1] - that_val)
+        error_train[k] = np.sqrt(((training_set[:,1] - that_train)**2).mean(axis=0))
+        error_val[k] = np.sqrt(((validation_set[:,1] - that_val)**2).mean(axis=0))
     
     l_optimal = P[np.argmin(error_val)]
     
@@ -195,7 +195,7 @@ def problem3():
     
     alpha_optimal = alpha[np.argmin(error_val)]
     
-    print('Best alpha = ', alpha_optimal)
+    print('Best alpha = ', format(alpha_optimal,'.6f'))
     
     mean = np.linspace(0,60,L).reshape(1,-1)
     std = mean[0,1] - mean[0,0]
@@ -221,71 +221,74 @@ def problem3():
 problem3()
 
 #%%
-def flower_to_float(s):
-    d = {b'Iris-setosa':0.,b'Iris-versicolor':1.,b'Iris-virginica':2.}
-    return d[s]
-
-irises = np.loadtxt('iris.data',delimiter=',',converters={4:flower_to_float})
-
-data = irises[:,:-1]
-data = np.column_stack((np.ones(data.shape[0]),data))
-
-labels = irises[:,-1].astype(int)
-
-onehot = np.zeros((labels.shape[0], 3))
-onehot[np.arange(labels.shape[0]), labels[:]] = 1
-
-ind = np.arange(25)
-masktrain = np.hstack((ind,ind+50,ind+100))
-ind = np.arange(25,50)
-masktest = np.hstack((ind,ind+50,ind+100))
-
-xtrain = data[masktrain]
-ytrain = onehot[masktrain]
-
-xtest = data[masktest]
-ytest = onehot[masktest]
-
-alpha = 0.003
-
-def f(w):
-    prior = alpha*np.dot(w.T,w)
+def problem4():
+    def flower_to_float(s):
+        d = {b'Iris-setosa':0.,b'Iris-versicolor':1.,b'Iris-virginica':2.}
+        return d[s]
     
-    num = 0.0
-    for k in range(3):
-        wk = w[k*5:k*5+5]
-        temp = np.sum(ytrain[:,k]*np.dot(wk.T,xtrain.T))
-        num = num + temp
+    irises = np.loadtxt('iris.data',delimiter=',',converters={4:flower_to_float})
     
-    denom = 0.0 
-    for k in range(3):
-        wk = w[k*5:k*5+5]
-        temp = np.dot(wk.T,xtrain.T)
-        denom = denom + np.exp(temp)
+    data = irises[:,:-1]
+    data = np.column_stack((np.ones(data.shape[0]),data))
     
-    denom = np.sum(np.log(denom))
+    labels = irises[:,-1].astype(int)
     
-    return prior - (num - denom)
+    onehot = np.zeros((labels.shape[0], 3))
+    onehot[np.arange(labels.shape[0]), labels[:]] = 1
+    
+    ind = np.arange(25)*2+1
+    masktrain = np.hstack((ind,ind+50,ind+100))
+    ind = np.arange(25)*2
+    masktest = np.hstack((ind,ind+50,ind+100))
+    
+    xtrain = data[masktrain]
+    ytrain = onehot[masktrain]
+    
+    xtest = data[masktest]
+    ytest = onehot[masktest]
+    
+    alpha = 0.003
+    
+    def f(w):
+        prior = alpha*np.dot(w.T,w)/2
+        
+        num = 0.0
+        for k in range(3):
+            wk = w[k*5:k*5+5]
+            temp = np.sum(ytrain[:,k]*np.dot(wk.T,xtrain.T))
+            num = num + temp
+        
+        denom = 0.0 
+        for k in range(3):
+            wk = w[k*5:k*5+5]
+            temp = np.dot(wk.T,xtrain.T)
+            denom = denom + np.exp(temp)
+        
+        denom = np.sum(np.log(denom))
+        
+        return prior - (num - denom)
+    
+    w_init = np.ones(15)
+    w_hat1 = minimize(f, w_init).x
+    
+    w_hat = w_hat1.reshape(3,-1)
+    
+    z = np.dot(w_hat,xtest.T).T
+    
+    s = np.exp(z)/((np.sum(np.exp(z),axis=1)).reshape(-1,1))
+    
+    ypred = np.zeros_like(s)
+    ypred[np.arange(len(s)), s.argmax(1)] = 1
+    
+    n_class1 = np.sum(ypred[0:25,0])
+    n_class2 = np.sum(ypred[25:50,1])
+    n_class3 = np.sum(ypred[50:,2])
+    
+    accuracy = (n_class1 + n_class2 + n_class3)/75 #ytest.shape[0]
+    
+    print('Accuracy = ', format(accuracy, '.4f'))
 
-w_init = np.ones(15)
-w_hat = minimize(f, w_init).x
-
-w_hat = w_hat.reshape(3,-1)
-
-z = np.dot(w_hat,xtest.T).T
-
-s = np.exp(z)/((np.sum(np.exp(z),axis=1)).reshape(-1,1))
-
-ypred = np.zeros_like(s)
-ypred[np.arange(len(s)), s.argmax(1)] = 1
-
-n_class1 = np.sum(ypred[0:25,0])
-n_class2 = np.sum(ypred[25:50,1])
-n_class3 = np.sum(ypred[50:,2])
-
-accuracy = (n_class1 + n_class2 + n_class3)/ytest.shape[0]
-
-print('Accuracy = ', accuracy)
+problem4()
 
 
 
