@@ -122,6 +122,8 @@ def problem2():
     
     l_optimal = P[np.argmin(error_val)]
     
+    print("L = ",l_optimal)
+    
     mean = np.linspace(0,60,l_optimal).reshape(1,-1)
     std = mean[0,1] - mean[0,0]
        
@@ -228,7 +230,6 @@ irises = np.loadtxt('iris.data',delimiter=',',converters={4:flower_to_float})
 data = irises[:,:-1]
 data = np.column_stack((np.ones(data.shape[0]),data))
 
-#%%
 labels = irises[:,-1].astype(int)
 
 onehot = np.zeros((labels.shape[0], 3))
@@ -260,7 +261,7 @@ def f(w):
     for k in range(3):
         wk = w[k*5:k*5+5]
         temp = np.dot(wk.T,xtrain.T)
-        denom = denom + temp
+        denom = denom + np.exp(temp)
     
     denom = np.sum(np.log(denom))
     
@@ -271,30 +272,21 @@ w_hat = minimize(f, w_init).x
 
 w_hat = w_hat.reshape(3,-1)
 
-#%%
 z = np.dot(w_hat,xtest.T).T
 
 s = np.exp(z)/((np.sum(np.exp(z),axis=1)).reshape(-1,1))
 
+ypred = np.zeros_like(s)
+ypred[np.arange(len(s)), s.argmax(1)] = 1
 
-#%%
-w = np.ones(15)
-num = 0.0
-for k in range(3):
-    wk = w[k*5:k*5+5]
-    temp = np.sum(ytrain[:,k]*np.dot(wk.T,xtrain.T))
-    num = num + temp
+n_class1 = np.sum(ypred[0:25,0])
+n_class2 = np.sum(ypred[25:50,1])
+n_class3 = np.sum(ypred[50:,2])
 
-denom = 0.0 
-for k in range(3):
-    wk = w[k*5:k*5+5]
-    temp = np.dot(wk.T,xtrain.T)
-    denom = denom + temp
+accuracy = (n_class1 + n_class2 + n_class3)/ytest.shape[0]
 
-denom = np.sum(np.log(denom))
+print('Accuracy = ', accuracy)
 
-#%%
-b = np.log(np.dot(w[0:5].T,xtrain.T))
 
 
 
