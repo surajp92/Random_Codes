@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 from numpy import linalg as LA
 from scipy.optimize import minimize
 
+from numpy.random import seed
+seed(1)
+
 font = {'family' : 'Times New Roman',
         'size'   : 12}    
 plt.rc('font', **font)
@@ -71,11 +74,72 @@ plt.show()
 
 #%%
 
+test_images_file = open('t10k-images-idx3-ubyte','rb')
+test_images = test_images_file.read()
+test_images_file.close()
+test_images = bytearray(test_images)
+test_images = test_images[16:]
 
+test_labels_file = open('t10k-labels-idx1-ubyte','rb')
+test_labels = test_labels_file.read()
+test_labels_file.close()
+test_labels = bytearray(test_labels)
+test_labels = test_labels[8:]
 
+test_images = np.array(test_images)
+test_images = test_images.reshape(10000,-1)
 
+test_labels = np.array(test_labels)
+test_labels = test_labels.reshape(10000,-1)
 
+#test_images[test_images[:,:]>=1] = 1
+#test_images[test_images[:,:]<1] = 0
 
+#%%
+K = 10
+#centroid = np.random.randint(np.max(test_images),size=(10,784))
+centroid = np.random.rand(10,784)*255
+centroid_temp = np.zeros((10,784))
+
+dist_mat = np.zeros((test_images.shape[0],10))
+
+residual = 1
+
+n = 0
+
+#%%
+while residual > 0.001:
+    for k in range(K):
+        b = test_images - centroid[k,:]
+        dist_mat[:,k] = LA.norm(b,axis=1)**2
+    
+    ind = np.argmin(dist_mat,axis=1)
+
+    for k in range(K):
+        temp = test_images[ind == k]
+        if temp.size != 0:
+            centroid_temp[k,:] = np.average(temp,axis=0)
+    
+    residual = LA.norm(centroid - centroid_temp)
+    centroid[:,:] = centroid_temp[:,:]
+    print(n, " res = ", residual)
+    n = n+1
+
+#%%
+J = 0
+for k in range(K):
+    temp = test_images[ind == k]
+    b = temp - centroid[k,:]
+    J = J + LA.norm(b)**2
+    
+unique, counts = np.unique(ind, return_counts=True)
+unique1, counts1 = np.unique(test_labels, return_counts=True)
+
+comp = test_labels == ind.reshape(-1,1)
+u,c = np.unique(comp, return_counts=True)
+
+#%%
+dist = LA.norm(centroid[0,:]-test_images[0,:], 2)**2
 
 
 
