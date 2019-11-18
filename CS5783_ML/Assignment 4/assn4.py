@@ -14,10 +14,6 @@ from scipy.optimize import minimize
 from numpy.random import seed
 seed(1)
 
-font = {'family' : 'Times New Roman',
-        'size'   : 12}    
-plt.rc('font', **font)
-
 
 #%%
 # Define the kernel function
@@ -275,57 +271,97 @@ for q in range(4):
         plt.show()
 
 #%% problem 3
-zval = np.array([0,1]) #Latent variable [0=Fair, 1=Loaded]
-xval = np.array([1,2,3,4,5,6]) #Obervations
+zvalue = np.array([0,1]) #Latent variable [0=Fair, 1=Loaded]
+xvalue = np.array([1,2,3,4,5,6]) #Obervations
 
-px_z = np.array([[1/6, 1/6, 1/6, 1/6, 1/6, 1/6], [0.1, 0.1, 0.1, 0.1, 0.1, 0.5]])
-pz_z = np.array([[0.95, 0.05],[0.1,0.9]])                
+pxz = np.array([[1/6, 1/6, 1/6, 1/6, 1/6, 1/6], [0.1, 0.1, 0.1, 0.1, 0.1, 0.5]])
+pzz = np.array([[0.95, 0.05],[0.1,0.9]])                
 
 Nsteps = 1000
 xtrue = np.zeros(Nsteps)
 ztrue = np.zeros(Nsteps)
 
 ztrue[0] = 0
-px = px_z[int(ztrue[0])]
-xtrue[0] = np.random.choice(xval, 1, p=px)
+px = pxz[int(ztrue[0])]
+xtrue[0] = np.random.choice(xvalue, 1, p=px)
 
 for i in range(1,Nsteps):
    
-   pz = pz_z[int(ztrue[i-1])]
-   ztrue[i] = np.random.choice(zval, 1, p=pz)
+   pz = pzz[int(ztrue[i-1])]
+   ztrue[i] = np.random.choice(zvalue, 1, p=pz)
    
-   px = px_z[int(ztrue[i])]
-   xtrue[i] = np.random.choice(xval, 1, p=px)
-
+   px = pxz[int(ztrue[i])]
+   xtrue[i] = np.random.choice(xvalue, 1, p=px)
 
 #%%
 # Transition Probabilities
-a = np.array(((0.95, 0.05), (0.1, 0.9)))
+ptransition = np.array(((0.95, 0.05), (0.1, 0.9)))
  
 # Emission Probabilities
-b = np.array(((1/6, 1/6, 1/6, 1/6, 1/6, 1/6), (0.1, 0.1, 0.1, 0.1, 0.1, 0.5)))
+pemission = np.array(((1/6, 1/6, 1/6, 1/6, 1/6, 1/6), (0.1, 0.1, 0.1, 0.1, 0.1, 0.5)))
 
 # Equal Probabilities for the initial distribution
 initial_distribution = np.array((0.5,0.5))
 
-def forward(V, a, b, initial_distribution):
-    alpha = np.zeros((V.shape[0], a.shape[0]))
-    alpha[0, :] = initial_distribution * b[:, int(V[0]-1)]
+def forward(x, a, b, initial_distribution):
+    alpha = np.zeros((x.shape[0], a.shape[0]))
+    alpha[0, :] = initial_distribution * b[:, int(x[0]-1)]
     
     alpha[0, :] = alpha[0,:]/np.sum(alpha[0,:])
     
-    for t in range(1, V.shape[0]):
+    for t in range(1, x.shape[0]):
         for j in range(a.shape[0]):
-            alpha[t, j] = alpha[t - 1].dot(a[:, j]) * b[j, int(V[t]-1)]
+            alpha[t, j] = alpha[t - 1].dot(a[:, j]) * b[j, int(x[t]-1)]
         alpha[t,:]  = alpha[t,:]/np.sum(alpha[t,:])
         
     return alpha
  
-alpha = forward(xtrue, a, b, initial_distribution)
 
-fig, ax = plt.subplots(nrows=1,ncols=1,figsize=(12,4))
+def backward(x, a, b):
+    beta = np.zeros((x.shape[0], a.shape[0]))
+ 
+    # setting beta(T) = 1
+    beta[-1] = np.ones((a.shape[0]))
+    beta[-1,:]  = beta[-1,:]/np.sum(beta[-1,:])
+ 
+    # Loop in backward way from T-1 to
+    # Due to python indexing the actual loop will be T-2 to 0
+    for t in range(x.shape[0] - 2, -1, -1):
+        for j in range(a.shape[0]):
+            beta[t, j] = (beta[t + 1] * b[:, int(x[t + 1]-1)]).dot(a[j, :])
+        beta[t,:]  = beta[t,:]/np.sum(beta[t,:])
+        
+    return beta
+ 
+alpha = forward(xtrue, ptransition, pemission, initial_distribution)
+
+beta = backward(xtrue, ptransition, pemission)
+
+fig, ax = plt.subplots(nrows=1,ncols=1,figsize=(16,4))
 ax.plot(ztrue,'k',label='Actual loaded dice')
 ax.plot(alpha[:,1],'r',label='Probability of loaded dice')
 ax.legend(loc=2)
-##plt.gca().fill_between(xtest.flat, mu-1*stdv, mu+1*stdv, color="#dddddd")
+ax.set_xlabel('Time steps')
+ax.set_title('Forward')
+plt.show()
+
+fig, ax = plt.subplots(nrows=1,ncols=1,figsize=(16,4))
+ax.plot(ztrue,'k',label='Actual loaded dice')
+ax.plot(beta[:,1],'r',label='Probability of loaded dice')
+ax.legend(loc=2)
+ax.set_xlabel('Time steps')
+ax.set_title('Backward')
+plt.show()
+
+posterior = alpha*beta
+
+posterior = posterior[:,:]/np.sum(posterior,axis=1,keepdims=True)
+    
+
+fig, ax = plt.subplots(nrows=1,ncols=1,figsize=(16,4))
+ax.plot(ztrue,'k',label='Actual loaded dice')
+ax.plot(posterior[:,1],'r',label='Probability of loaded dice')
+ax.legend(loc=2)
+ax.set_xlabel('Time steps')
+ax.set_title('Posterior')
 plt.show()
