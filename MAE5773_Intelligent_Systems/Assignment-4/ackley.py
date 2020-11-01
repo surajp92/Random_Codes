@@ -35,7 +35,7 @@ startTime = time.time()
 #-------------------------------------------------------------
 
 # 2.1 GA Parameters
-algoName    = "GABasic" # Algo Name
+algoName    = "ackley" # Algo Name'
 CR 	    = 0.5  	# Crossover Rate
 MR 	    = 0.5       # Mutation Rate
 
@@ -170,7 +170,7 @@ def Mutation():
             c=deepcopy(p.chromosome)
 
             # Mutation
-            c[pt] = round(random.uniform(LB,UB),8)
+            c[pt] = round(random.uniform(LB,UB),2)
 
             #Get the fitness of childs
             cFitness=FitnessFunction(c)

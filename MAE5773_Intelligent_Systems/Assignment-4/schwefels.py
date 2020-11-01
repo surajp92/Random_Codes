@@ -35,15 +35,15 @@ startTime = time.time()
 #-------------------------------------------------------------
 
 # 2.1 GA Parameters
-algoName    = "GABasic" # Algo Name
-CR 	    = 0.95  	# Crossover Rate
+algoName    = "schwefels" # Algo Name
+CR 	    = 0.5  	# Crossover Rate
 MR 	    = 0.5       # Mutation Rate
 
 # 2.2 Global Parameters
-iterations  = 5000       # Number of iterations
-popSize     = 200       # Population Size(i.e Number of Chromosomes)
+iterations  = 1500       # Number of iterations
+popSize     = 100       # Population Size(i.e Number of Chromosomes)
 pop         = []        # Store Population with Fitness
-maxFunEval  = 800000    # Maximum allowable function evaluations
+maxFunEval  = 200000    # Maximum allowable function evaluations
 funEval	    = 0		# Count function evaluations
 bestFitness = 999999999  # Store Best Fitness Value
 bestChromosome = []     # Store Best Chromosome
@@ -52,25 +52,19 @@ bestChromosome = []     # Store Best Chromosome
 # Fitness Function parameters
 #-------------------------------------------------------------
 D       = 10    # Problem Dimension
-LB      = -600 # Xi value Lower Bound
-UB      = 600   # Xi value Size Upper Bound
+LB      = -500 # Xi value Lower Bound
+UB      = 500   # Xi value Size Upper Bound
 
 #-------------------------------------------------------------
 # Fitness Function
 #-------------------------------------------------------------
 def FitnessFunction(x):
     
-    term1 = 0.0
-    term2 = 1.0
+    result = 0.0
 
     for i in range(D):
-        term1 += (x[i]**2)/4000
-    
-    for i in range(D):
-        term2 = term2*np.cos(x[i]/np.sqrt(i+1))
-        
-    result = term1 - term2 + 1.0
-    
+        result += -x[i]*np.sin(np.sqrt(np.abs(x[i])))
+                
     return result
   
 # 2.3 Result Saving Parameters
@@ -117,7 +111,7 @@ def Crossover():
         if (random.random() <= CR):
 
             # Choose two random indices
-            i1,i2 = random.sample(range(0,popSize), 2)
+            i1,i2=random.sample(range(0,popSize), 2)
 
             # Parents
             p1=deepcopy(pop[i1])
@@ -229,7 +223,7 @@ print("Result is saved in", resultFileName)
 print("Total Time Taken: ", round(time.time() - startTime,2), " sec\n")
 
 #%%
-plt.semilogy(range(count), a, 'ro-')
+plt.plot(range(count), a, 'ro-')
 #plt.ylim([1e-2,1000])
 plt.show()
 

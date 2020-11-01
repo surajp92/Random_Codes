@@ -35,7 +35,7 @@ startTime = time.time()
 #-------------------------------------------------------------
 
 # 2.1 GA Parameters
-algoName    = "GABasic" # Algo Name
+algoName    = "djf_3" # Algo Name
 CR 	    = 0.5  	# Crossover Rate
 MR 	    = 0.5       # Mutation Rate
 

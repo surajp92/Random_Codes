@@ -35,9 +35,10 @@ startTime = time.time()
 #-------------------------------------------------------------
 
 # 2.1 GA Parameters
-algoName    = "GABasic" # Algo Name
+algoName    = "rastrigen" # Algo Name
 CR 	    = 0.5  	# Crossover Rate
 MR 	    = 0.5       # Mutation Rate
+alpha = 0.99
 
 # 2.2 Global Parameters
 iterations  = 1500       # Number of iterations
@@ -105,7 +106,8 @@ def MemoriseGlobalBest():
 
 # Function 4: Perform Crossover Operation
 def Crossover():
-    global funEval
+    global funEval, CR
+    
     for i in range(0,popSize):
 
         if (random.random() <= CR):
@@ -204,6 +206,8 @@ for i in range(0,iterations):
         count=count+1
         #plotting with x-axis
         a.append(bestFitness)
+        
+        CR = alpha*CR
     
 #        if len(a) > 2:
 #            if np.linalg.norm(a[-1] - a[-2]) < 1e-12:

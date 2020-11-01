@@ -35,13 +35,13 @@ startTime = time.time()
 #-------------------------------------------------------------
 
 # 2.1 GA Parameters
-algoName    = "GABasic" # Algo Name
+algoName    = "djf_2" # Algo Name
 CR 	    = 0.5  	# Crossover Rate
 MR 	    = 0.5       # Mutation Rate
 
 # 2.2 Global Parameters
 iterations  = 5000       # Number of iterations
-popSize     = 20       # Population Size(i.e Number of Chromosomes)
+popSize     = 50       # Population Size(i.e Number of Chromosomes)
 pop         = []        # Store Population with Fitness
 maxFunEval  = 200000    # Maximum allowable function evaluations
 funEval	    = 0		# Count function evaluations
@@ -84,7 +84,7 @@ def Init():
     for i in range (0, popSize):
         chromosome = []
         for j in range(0,D):
-            chromosome.append(round(random.uniform(LB,UB),4))
+            chromosome.append(round(random.uniform(LB,UB),6))
         fitness = FitnessFunction(chromosome)
         funEval = funEval + 1
         newIndividual = Individual(chromosome,fitness)

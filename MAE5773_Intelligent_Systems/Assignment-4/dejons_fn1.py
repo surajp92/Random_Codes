@@ -35,9 +35,10 @@ startTime = time.time()
 #-------------------------------------------------------------
 
 # 2.1 GA Parameters
-algoName    = "GABasic" # Algo Name
-CR 	    = 0.5  	# Crossover Rate
+algoName    = "djf_1" # Algo Name
+CR 	    = 0.8  	# Crossover Rate
 MR 	    = 0.5       # Mutation Rate
+alpha = 1.0
 
 # 2.2 Global Parameters
 iterations  = 200       # Number of iterations
@@ -104,7 +105,10 @@ def MemoriseGlobalBest():
 
 # Function 4: Perform Crossover Operation
 def Crossover():
-    global funEval
+    global funEval, CR
+    
+#    print(CR)
+    
     for i in range(0,popSize):
 
         if (random.random() <= CR):
@@ -164,6 +168,7 @@ def Mutation():
             #Get the fitness of childs
             cFitness=FitnessFunction(c)
             funEval = funEval + 1
+            
             # Select between parent and child
             if cFitness < p.fitness:
                 pop[r].fitness=cFitness
@@ -203,6 +208,8 @@ for i in range(0,iterations):
         count=count+1
         #plotting with x-axis
         a.append(bestFitness)
+        
+        CR = alpha*CR
     
 #        if len(a) > 2:
 #            if np.linalg.norm(a[-1] - a[-2]) < 1e-4:

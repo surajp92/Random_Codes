@@ -26,6 +26,8 @@ from copy import deepcopy
 import math as m
 import numpy as np
 
+#random.seed(1)
+
 import matplotlib.pyplot as plt
 
 startTime = time.time()
@@ -35,10 +37,12 @@ startTime = time.time()
 #-------------------------------------------------------------
 
 # 2.1 GA Parameters
-algoName    = "griewangk" # Algo Name
-CR 	    = 0.5  	# Crossover Rate
-MR 	    = 0.5      # Mutation Rate
-alpha = 1.0
+algoName    = "griewangks_own" # Algo Name
+CR 	    = 0.8  	# Crossover Rate
+MR 	    = 0.85      # Mutation Rate
+RR      = 0.1  # retain rate, retain poor offsprings
+alpha = 0.98
+beta = 1.001
 
 # 2.2 Global Parameters
 iterations  = 100000       # Number of iterations
@@ -52,7 +56,7 @@ bestChromosome = []     # Store Best Chromosome
 #-------------------------------------------------------------
 # Fitness Function parameters
 #-------------------------------------------------------------
-D       = 10    # Problem Dimension
+D       = 10   # Problem Dimension
 LB      = -600 # Xi value Lower Bound
 UB      = 600   # Xi value Size Upper Bound
 
@@ -94,7 +98,9 @@ def Init():
     for i in range (0, popSize):
         chromosome = []
         for j in range(0,D):
-            chromosome.append(round(random.uniform(LB,UB),4))
+            chromosome.append(round(random.uniform(LB,UB),2))
+#            chromosome.append(random.uniform(LB,UB))
+            
         fitness = FitnessFunction(chromosome)
         funEval = funEval + 1
         newIndividual = Individual(chromosome,fitness)
@@ -112,7 +118,12 @@ def MemoriseGlobalBest():
 
 # Function 4: Perform Crossover Operation
 def Crossover():
-    global funEval, CR
+    global funEval, CR, pop
+    
+#    print(len(pop))
+#    l = random.sample(range(len(pop)), popSize)
+#    pop = [pop[l[i]] for i in range(len(l))]
+     
     for i in range(0,popSize):
 
         if (random.random() <= CR):
@@ -125,12 +136,20 @@ def Crossover():
             p2=deepcopy(pop[i2])
 
             # Choose a crossover point 
-            pt = random.randint(1,D-2)
+            pts = np.sort(np.random.choice(np.arange(1,D-1),2,replace=False))
 
             # Generate new childs 
-            c1=p1.chromosome[0:pt] + p2.chromosome[pt:]
-            c2=p2.chromosome[0:pt] + p1.chromosome[pt:]
-
+#            c1=p1.chromosome[0:pt1] + p2.chromosome[pt1:pt2] + p1.chromosome[pt2:]
+#            c2=p2.chromosome[0:pt1] + p1.chromosome[pt1:pt2] + p2.chromosome[pt2:]
+            
+            c1 = p1.chromosome
+            c2 = p2.chromosome
+            
+            for pt in pts:
+                temp = c1[:pt] + c2[pt:]
+                c2 = c2[:pt] + c1[pt:]
+                c1 = deepcopy(temp)
+                
             # Get the fitness of childs 
             c1Fitness=FitnessFunction(c1)
             funEval = funEval + 1
@@ -141,10 +160,23 @@ def Crossover():
             if c1Fitness < p1.fitness:
                 pop[i1].fitness=c1Fitness
                 pop[i1].chromosome=c1
+            
+            elif (random.random() <= RR):
+#                newIndividual = Individual(c1,c1Fitness)
+#                pop.append(newIndividual)
+                pop[i1].fitness=c1Fitness
+                pop[i1].chromosome=c1
                 
             if c2Fitness < p2.fitness:
                 pop[i2].fitness=c2Fitness
                 pop[i2].chromosome=c2
+                
+            elif (random.random() <= RR):
+#                newIndividual = Individual(c2,c2Fitness)
+#                pop.append(newIndividual)
+                pop[i2].fitness=c2Fitness
+                pop[i2].chromosome=c2
+        
 
 
 # Function 5: Perform Mutation Operation
@@ -167,7 +199,7 @@ def Mutation():
             c=deepcopy(p.chromosome)
 
             # Mutation
-            c[pt] = round(random.uniform(LB,UB),2)
+            c[pt] = round(random.uniform(LB,UB),2) #random.uniform(LB,UB) #
 
             #Get the fitness of childs
             cFitness=FitnessFunction(c)
@@ -195,7 +227,6 @@ fp.write("Iteration,Fitness,Chromosomes\n")
 count=0
 a=[]
 
-
 for i in range(0,iterations):
     Crossover()
     Mutation()
@@ -212,14 +243,13 @@ for i in range(0,iterations):
         #plotting with x-axis
         a.append(bestFitness)
         
-        CR = CR*alpha
-    
+        CR = random.random() #CR*alpha #max(CR*alpha, 0.25)
+        MR = random.random() #min(beta*MR, 0.85) #
+#        RR = min(beta*RR, 0.2)
 #        if len(a) > 2:
 #            if np.linalg.norm(a[-1] - a[-2]) < 1e-12:
 #                break
     
-
-
 print("I:",i+1,"\t Fitness:", bestFitness)
 fp.write(str(i+1) + "," + str(bestFitness) + "," + str(bestChromosome))    
 fp.close()
