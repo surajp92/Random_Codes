@@ -8,11 +8,11 @@ from tensorflow import set_random_seed
 set_random_seed(2)
 import pandas as pd
 import time as tm
-from keras.regularizers import l2
 
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 
+from keras.regularizers import l2
 from keras import backend as K
 from keras.models import Sequential
 from keras.layers import Dense
