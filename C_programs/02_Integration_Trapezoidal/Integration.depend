@@ -1,0 +1,15 @@
+# depslib dependency file v1.0
+1611721461 source:/home/suraj/Desktop/C_programs/Integration/main.c
+	<stdio.h>
+	<stdlib.h>
+	<math.h>
+	<stdio.h>
+	<math.h>
+
+1611721461 source:/home/suraj/git_workspace/Random_Codes/C_programs/02_Integration_Trapezoidal/main.c
+	<stdio.h>
+	<stdlib.h>
+	<math.h>
+	<stdio.h>
+	<math.h>
+
