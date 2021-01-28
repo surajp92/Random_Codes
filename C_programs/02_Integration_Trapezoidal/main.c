@@ -76,14 +76,14 @@ float qtrap(float (*func)(float), float a, float b)
 /* Test function */
 float func(float x)
 {
-    return pow(x,2.0)*(pow(x,4.0) - sin(2.0*x));
+    return sin(x); //pow(x,2.0)*(pow(x,4.0) - sin(2.0*x));
     // return x*x*(x*x-2.0)*sin(x);
 }
 
 /* Integral of test function func, i.e., test result */
 float fint(float x)
 {
-    return x*x*x/3;
+    return -cos(x);
     // return 4.0*x*(x*x-7.0)*sin(x)-(pow(x,4.0)-14.0*x*x+28.0)*cos(x);
 }
 
