@@ -1,0 +1,81 @@
+% Driver file for Ex1 (Petrov-Galerkin Method)
+clear
+clc
+
+%% Prepare PDE Info
+a = 0; b = 1; % domain
+ga  = 3; % left boundary
+gb = exp(1); % boundary condition
+funF = @(x) exp(x).*(-4-x+x.^3-(2+x).*cos(x)+(1+x).*sin(x)); % load function
+
+%% Prepare Test and Trial Space
+psi1 = @(x) sin(pi*x);  Dpsi1 = @(x) pi*cos(pi*x);
+psi2 = @(x) x.^2-x; Dpsi2 = @(x) 2*x-1;
+psi3 = @(x) x.^3-x.^2; Dpsi3 = @(x) 3*x.^2-2*x;
+
+%phid = @(x) exp(1); Dphid = @(x) 0;
+phid = @(x) exp(x); Dphid = @(x) exp(x);
+
+ax = @(x) 2 + cos(x);
+cx = @(x) 1 + x.^2;
+
+%% Stiffness Matrix
+S = zeros(3,3);
+M = zeros(3,3);
+
+S(1,1) = integral(@(x) ax(x).*Dpsi1(x).*Dpsi1(x),a,b);
+S(1,2) = integral(@(x) ax(x).*Dpsi1(x).*Dpsi2(x),a,b);
+S(1,3) = integral(@(x) ax(x).*Dpsi1(x).*Dpsi3(x),a,b);
+
+S(2,1) = integral(@(x) ax(x).*Dpsi2(x).*Dpsi1(x),a,b);
+S(2,2) = integral(@(x) ax(x).*Dpsi2(x).*Dpsi2(x),a,b);
+S(2,3) = integral(@(x) ax(x).*Dpsi2(x).*Dpsi3(x),a,b);
+
+S(3,1) = integral(@(x) ax(x).*Dpsi3(x).*Dpsi1(x),a,b);
+S(3,2) = integral(@(x) ax(x).*Dpsi3(x).*Dpsi2(x),a,b);
+S(3,3) = integral(@(x) ax(x).*Dpsi3(x).*Dpsi3(x),a,b);
+
+M(1,1) = integral(@(x) cx(x).*psi1(x).*psi1(x),a,b);
+M(1,2) = integral(@(x) cx(x).*psi1(x).*psi2(x),a,b);
+M(1,3) = integral(@(x) cx(x).*psi1(x).*psi3(x),a,b);
+
+M(2,1) = integral(@(x) cx(x).*psi2(x).*psi1(x),a,b);
+M(2,2) = integral(@(x) cx(x).*psi2(x).*psi2(x),a,b);
+M(2,3) = integral(@(x) cx(x).*psi2(x).*psi3(x),a,b);
+
+M(3,1) = integral(@(x) cx(x).*psi3(x).*psi1(x),a,b);
+M(3,2) = integral(@(x) cx(x).*psi3(x).*psi2(x),a,b);
+M(3,3) = integral(@(x) cx(x).*psi3(x).*psi3(x),a,b);
+
+A = S + M;
+
+%% RHS Vector
+f1 = integral(@(x) psi1(x).*funF(x),a,b);
+f2 = integral(@(x) psi2(x).*funF(x),a,b);
+f3 = integral(@(x) psi3(x).*funF(x),a,b);
+f = [f1;f2;f3];
+
+bd1 = integral(@(x) ax(x).*Dpsi1(x).*Dphid(x),a,b) + integral(@(x) cx(x).*psi1(x).*phid(x),a,b);
+bd2 = integral(@(x) ax(x).*Dpsi2(x).*Dphid(x),a,b) + integral(@(x) cx(x).*psi2(x).*phid(x),a,b);
+bd3 = integral(@(x) ax(x).*Dpsi3(x).*Dphid(x),a,b) + integral(@(x) cx(x).*psi3(x).*phid(x),a,b);
+bd = [bd1;bd2;bd3];
+
+bn1 = ga*psi1(a);
+bn2 = ga*psi2(a);
+bn3 = ga*psi3(a);
+bn = [bn1;bn2;bn3];
+
+br = f - bd - bn;
+
+%% Solve Linear System
+uc = A\br;
+
+%% Form PG Solution
+us = @(x) uc(1)*psi1(x) + uc(2)*psi2(x) + uc(3)*psi3(x) + phid(x);
+
+%% Postprocess: Plot Solution
+figure(1);clf
+xx = a:(b-a)/100:b;
+plot(xx,us(xx),'k-.','lineWidth',2)
+grid on
+legend('Galerkin','Location','NorthWest','FontSize',16)

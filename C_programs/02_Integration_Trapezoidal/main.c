@@ -22,7 +22,7 @@ float trapzd(float (*func)(float), float a, float b, int n)
     int it,j;
 
     if (n == 1) {
-            return (s=0.5*(b-a)*(FUNC(a)+FUNC(b)));
+            return (s=0.5*(b-a)*((*func)(a)+(*func)(b)));
     } else {
             for (it=1,j=1;j<n-1;j++) it <<= 1;
             tnm=it;
