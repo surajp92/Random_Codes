@@ -1,0 +1,5 @@
+# depslib dependency file v1.0
+1611894314 source:/home/suraj/git_workspace/Random_Codes/C_programs/FEM/HW1/HW1/hw1/main.c
+	<stdio.h>
+	<math.h>
+
