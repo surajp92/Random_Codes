@@ -1,3 +1,8 @@
+#include <stdio.h>
+#include <math.h>
+#define PI 3.1415926
+#define PIO2 1.5707963
+
 static const double x[] = {
     0.00000000000000000000e+00,    5.38469310105683091018e-01,
     9.06179845938663992811e-01
@@ -24,16 +29,69 @@ float Gauss_Legendre_Integration_5pts(float a, float b, float (*f)(float))
    return c * integral;
 }
 
-float product(float x, float (*f1)(float))
+
+int Gaussian_Elimination(float *A, int n, float *B)
 {
-    return (*f1)(x);
+   int row, i, j, pivot_row;
+   float max, dum, *pa, *pA, *A_pivot_row;
+
+      // for each variable find pivot row and perform forward substitution
+
+   pa = A;
+   for (row = 0; row < (n - 1); row++, pa += n) {
+
+                       //  find the pivot row
+
+      A_pivot_row = pa;
+      max = fabs(*(pa + row));
+      pA = pa + n;
+      pivot_row = row;
+      for (i = row + 1; i < n; pA += n, i++)
+         if ((dum = fabs(*(pA + row))) > max) {
+            max = dum; A_pivot_row = pA; pivot_row = i;
+         }
+      if (max == 0.0) return -1;                // the matrix A is singular
+
+        // and if it differs from the current row, interchange the two rows.
+
+      if (pivot_row != row) {
+         for (i = row; i < n; i++) {
+            dum = *(pa + i);
+            *(pa + i) = *(A_pivot_row + i);
+            *(A_pivot_row + i) = dum;
+         }
+         dum = B[row];
+         B[row] = B[pivot_row];
+         B[pivot_row] = dum;
+      }
+
+    // Perform forward substitution
+
+      for (i = row + 1; i < n; i++) {
+         pA = A + i * n;
+         dum = - *(pA + row) / *(pa + row);
+         *(pA + row) = 0.0;
+         for (j = row + 1; j < n; j++) *(pA + j) += dum * *(pa + j);
+         B[i] += dum * B[row];
+      }
+   }
+
+    // Perform backward substitution
+
+   pa = A + (n - 1) * n;
+   for (row = n - 1; row >= 0; pa -= n, row--) {
+      if ( *(pa + row) == 0.0 ) return -1;           // matrix is singular
+      dum = 1.0 / *(pa + row);
+      for ( i = row + 1; i < n; i++) *(pa + i) *= dum;
+      B[row] *= dum;
+      for ( i = 0, pA = A; i < row; pA += n, i++) {
+         dum = *(pA + row);
+         for ( j = row + 1; j < n; j++) *(pA + j) -= dum * *(pa + j);
+         B[i] -= dum * B[row];
+      }
+   }
+   return 0;
 }
-
-
-#include <stdio.h>
-#include <math.h>
-#define PI 3.1415926
-#define PIO2 1.5707963
 
 float ax(float x){return (2 + cos(x));}
 float cx(float x){return (1 + pow(x,2));}
@@ -43,12 +101,16 @@ float psi1(float x){return (sin(PI*x));}
 float psi2(float x){return (pow(x,2)-x);}
 float psi3(float x){return (exp(x)-exp(1));}
 
+
 float dpsi1(float x){return (PI*cos(PI*x));}
 float dpsi2(float x){return (2*x-1);}
 float dpsi3(float x){return (exp(x));}
 
-float psid(float x){return (exp(x));}
-float dpsid(float x){return (exp(x));}
+//float psid(float x){return (exp(x));}
+//float dpsid(float x){return (exp(x));}
+
+float psid(float x){return (exp(1));}
+float dpsid(float x){return (0.0);}
 
 float S11(float x){return ax(x)*dpsi1(x)*dpsi1(x);}
 float S12(float x){return ax(x)*dpsi1(x)*dpsi2(x);}
@@ -72,37 +134,14 @@ float f1(float x){return psi1(x)*funF(x);}
 float f2(float x){return psi2(x)*funF(x);}
 float f3(float x){return psi3(x)*funF(x);}
 
-float bd1(float x){return ax(x)*dpsi1(x)*dpsid(x) + cx(x)*psi1(x)*psid(x);}
-float bd2(float x){return ax(x)*dpsi2(x)*dpsid(x) + cx(x)*psi2(x)*psid(x);}
-float bd3(float x){return ax(x)*dpsi3(x)*dpsid(x) + cx(x)*psi3(x)*psid(x);}
+float bd1(float x){return (ax(x)*dpsi1(x)*dpsid(x) + cx(x)*psi1(x)*psid(x));}
+float bd2(float x){return (ax(x)*dpsi2(x)*dpsid(x) + cx(x)*psi2(x)*psid(x));}
+float bd3(float x){return (ax(x)*dpsi3(x)*dpsid(x) + cx(x)*psi3(x)*psid(x));}
 
-float bn1(float g, float x){return g*psi1(x);}
-float bn2(float g, float x){return g*psi2(x);}
-float bn3(float g, float x){return g*psi3(x);}
+float bn1(float x){return 3.0*psi1(x);}
+float bn2(float x){return 3.0*psi2(x);}
+float bn3(float x){return 3.0*psi3(x);}
 
-/* Test function */
-float func(float x)
-{
-    return sin(PIO2*x); //pow(x,2.0)*(pow(x,4.0) - sin(2.0*x));
-    // return x*x*(x*x-2.0)*sin(x);
-}
-
-float func2(float x)
-{
-    return func(x);
-}
-
-float one(float x)
-{
-    return 1.0; //pow(x,2.0)*(pow(x,4.0) - sin(2.0*x));
-}
-
-/* Integral of test function func, i.e., test result */
-float fint(float x)
-{
-    return -cos(PIO2*x)/PIO2;
-    // return 4.0*x*(x*x-7.0)*sin(x)-(pow(x,4.0)-14.0*x*x+28.0)*cos(x);
-}
 
 void printmatrix(int N, float *matrix)
 {
@@ -121,11 +160,16 @@ void printmatrix(int N, float *matrix)
 
 int main(void)
 {
-    float a=0.0,b=1.0,s,t;
+    float a=0.0,b=1.0,g=3.0;
     int N = 3;
-    int row, columns;
-    float S[N][N],M[N][N],A[N][N];
-    float f[N][1],bd[N][1],bn[N][1];
+    int i, j;
+    float S[N][N],M[N][N],A[N][N],AC[N][N];
+    float f[N],bd[N],bn[N],B[N],BC[N];
+    int nx = 100;
+    float dx;
+    float ug[nx+1],x[nx+1];
+
+    dx = (b-a)/nx;
 
     S[0][0] = Gauss_Legendre_Integration_5pts(a,b,S11);
     S[0][1] = Gauss_Legendre_Integration_5pts(a,b,S12);
@@ -151,19 +195,61 @@ int main(void)
     M[2][1] = M[1][2];
     M[2][2] = Gauss_Legendre_Integration_5pts(a,b,M33);
 
-    printf("M\n");
-    printmatrix(N,(float *)M);
+    f[0] = Gauss_Legendre_Integration_5pts(a,b,f1);
+    f[1] = Gauss_Legendre_Integration_5pts(a,b,f2);
+    f[2] = Gauss_Legendre_Integration_5pts(a,b,f3);
 
-    for (int i = 0; i<N; i++)
-    {
-        for (int j = 0; j<N; j++)
-        {
+    bd[0] = Gauss_Legendre_Integration_5pts(a,b,bd1);
+    bd[1] = Gauss_Legendre_Integration_5pts(a,b,bd2);
+    bd[2] = Gauss_Legendre_Integration_5pts(a,b,bd3);
+
+    bn[0] = Gauss_Legendre_Integration_5pts(a,b,bn1);
+    bn[1] = Gauss_Legendre_Integration_5pts(a,b,bn2);
+    bn[2] = Gauss_Legendre_Integration_5pts(a,b,bn3);
+
+    for (i = 0; i<N; i++){
+        B[i] = f[i] - bd[i] - bn[i];
+    }
+
+    for (i = 0; i<N; i++){
+        for (j = 0; j<N; j++){
             A[i][j] = S[i][j] + M[i][j];
         }
     }
 
     printf("A\n");
     printmatrix(N,(float *)A);
+
+    // Save matrices A and vector B, the routine Gaussian_Elimination() //
+    // Destroys A and the Solution is returned in B.                    //
+    for (i = 0; i < N; i++){
+     for (j = 0; j < N; j++){
+        AC[i][j] = A[i][j];
+     }
+     BC[i] = B[i];
+    }
+
+    // Call Gaussian_Elimination() solution returned in B. //
+    Gaussian_Elimination(&A[0][0], N, (float *)B);
+
+    for (i = 0; i < N; i++){
+        printf("B[%d] = %f\n",i,B[i]);
+    }
+
+    // compute the Galerkin solution
+    for (i = 0; i<nx+1; i++){
+        x[i] = a + dx*i;
+        ug[i] = B[0]*psi1(x[i]) + B[1]*psi2(x[i]) + B[2]*psi3(x[i]) + psid(x[i]);
+        printf("i = %d %4f %4f\n", i, x[i], ug[i]);
+    }
+
+    FILE *fp = fopen("solution_2.txt", "w");
+    if (fp == NULL) return -1;
+    for (i = 0; i<nx+1; i++) {
+    // you might want to check for out-of-disk-space here, too
+    fprintf(fp, "%f,%f\n", x[i], ug[i]);
+    }
+    fclose(fp);
 
     return 0;
 }
