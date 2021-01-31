@@ -106,11 +106,11 @@ float dpsi1(float x){return (PI*cos(PI*x));}
 float dpsi2(float x){return (2*x-1);}
 float dpsi3(float x){return (exp(x));}
 
-//float psid(float x){return (exp(x));}
-//float dpsid(float x){return (exp(x));}
+float psid(float x){return (exp(x));}
+float dpsid(float x){return (exp(x));}
 
-float psid(float x){return (exp(1));}
-float dpsid(float x){return (0.0);}
+//float psid(float x){return (exp(1));}
+//float dpsid(float x){return (0.0);}
 
 float S11(float x){return ax(x)*dpsi1(x)*dpsi1(x);}
 float S12(float x){return ax(x)*dpsi1(x)*dpsi2(x);}
@@ -138,9 +138,9 @@ float bd1(float x){return (ax(x)*dpsi1(x)*dpsid(x) + cx(x)*psi1(x)*psid(x));}
 float bd2(float x){return (ax(x)*dpsi2(x)*dpsid(x) + cx(x)*psi2(x)*psid(x));}
 float bd3(float x){return (ax(x)*dpsi3(x)*dpsid(x) + cx(x)*psi3(x)*psid(x));}
 
-float bn1(float x){return 3.0*psi1(x);}
-float bn2(float x){return 3.0*psi2(x);}
-float bn3(float x){return 3.0*psi3(x);}
+float bn1(float x){return 3.0*psi1(0);}
+float bn2(float x){return 3.0*psi2(0);}
+float bn3(float x){return 3.0*psi3(0);}
 
 
 void printmatrix(int N, float *matrix)
@@ -220,6 +220,18 @@ int main(void)
     printf("A\n");
     printmatrix(N,(float *)A);
 
+    for (i = 0; i < N; i++){
+        printf("f[%d] = %f\n",i,f[i]);
+    }
+
+    for (i = 0; i < N; i++){
+        printf("bd[%d] = %f\n",i,bd[i]);
+    }
+
+    for (i = 0; i < N; i++){
+        printf("bn[%d] = %f\n",i,bn[i]);
+    }
+
     // Save matrices A and vector B, the routine Gaussian_Elimination() //
     // Destroys A and the Solution is returned in B.                    //
     for (i = 0; i < N; i++){
@@ -227,6 +239,10 @@ int main(void)
         AC[i][j] = A[i][j];
      }
      BC[i] = B[i];
+    }
+
+    for (i = 0; i < N; i++){
+        printf("B[%d] = %f\n",i,B[i]);
     }
 
     // Call Gaussian_Elimination() solution returned in B. //
@@ -240,10 +256,10 @@ int main(void)
     for (i = 0; i<nx+1; i++){
         x[i] = a + dx*i;
         ug[i] = B[0]*psi1(x[i]) + B[1]*psi2(x[i]) + B[2]*psi3(x[i]) + psid(x[i]);
-        printf("i = %d %4f %4f\n", i, x[i], ug[i]);
+        //printf("i = %d %4f %4f\n", i, x[i], ug[i]);
     }
 
-    FILE *fp = fopen("solution_2.txt", "w");
+    FILE *fp = fopen("solution_1.txt", "w");
     if (fp == NULL) return -1;
     for (i = 0; i<nx+1; i++) {
     // you might want to check for out-of-disk-space here, too
