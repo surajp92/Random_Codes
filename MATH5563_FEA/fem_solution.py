@@ -15,11 +15,11 @@ from evalFEfun1D import *
 
 domain = [0,1]
 n = 5
-pd = 2
+pd = 1
 
 mesh = genMesh1D(domain, n)
 fem = genFEM1D(mesh, pd)
-uh = np.array([1,3,4,5,4,3,1,1,1,1,1])
+uh = np.array([2,3,4,4,3,2])
 dind = 0
 
 for k in range(n):

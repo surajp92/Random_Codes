@@ -33,7 +33,7 @@ def evalFEfun1D(x, uhK, vert, pd, dind):
     
     for i in range(pd+1):
         ibas = i + 1
-        l = bas1DPN(x,vert,ibas,dind,pd)
+        l = bas1D(x,vert,ibas,dind,pd)
         f = f + uhK[i] * l
         
     return f
