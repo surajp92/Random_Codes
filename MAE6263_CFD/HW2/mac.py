@@ -135,12 +135,22 @@ plt.show()
 #%%
 X,Y = np.meshgrid(x,y)
 
-plt.contourf(X,Y,u[:,1:ny+2].T, 60, cmap='jet', vmin=-0.2, vmax=1.5)
-plt.colorbar()
+fig,ax = plt.subplots(1,1, figsize=(8,6))
+
+cbarticks = np.arange(-0.2,1.8,0.2)
+levels = np.linspace(-0.2,1.6, 41)
+cs = ax.contourf(X,Y,u[:,1:ny+2].T, levels=levels,cmap='jet', extend='both')
+fig.colorbar(cs, ax=ax, ticks = cbarticks)
+
 plt.show()    
 
 #%%
-plt.plot(y,v[int(ny/2),:],'ro-')
+uc = 0.5*(u[int(ny/2),0:ny+1] + u[int(ny/2),1:ny+2])
+plt.plot(uc,y,'ro-',fillstyle='none',mew=1,ms=8)
+plt.show()            
+
+vc = 0.5*(v[0:nx+1,int(nx/2)] + v[1:nx+2,int(nx/2)])
+plt.plot(x,vc,'bs-',fillstyle='none',mew=1,ms=8)
 plt.show()            
             
             
