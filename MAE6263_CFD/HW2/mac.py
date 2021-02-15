@@ -14,6 +14,8 @@ with open(r'ldc_parameters.yaml') as file:
     
 file.close()
 
+
+#%%
 re = input_data['re']
 nx = input_data['nx']
 ny = input_data['ny']
@@ -38,6 +40,9 @@ dt = sigma*np.min((dtc, dtv))
 u = np.zeros((nx+1, ny+2))
 v = np.zeros((nx+2, ny+1))
 p = np.zeros((nx+2, ny+2))
+
+us = np.zeros((nx+1, ny+2))
+vs = np.zeros((nx+2, ny+1))
 
 u0 = np.zeros((nx, ny))
 v0 = np.zeros((nx, ny))
@@ -70,7 +75,7 @@ for k in range(kmax):
     c2 = (0.25/dy)*((u[1:nx,2:ny+2] + u[1:nx,1:ny+1])*(v[2:nx+1,1:ny+1] + v[1:nx,1:ny+1]) - \
                     (u[1:nx,0:ny] + u[1:nx,1:ny+1])*(v[2:nx+1,0:ny] + v[1:nx,0:ny]))
         
-    u[1:nx,1:ny+1] = u[1:nx,1:ny+1] + dt*(-c1 -c2 + c3)
+    us[1:nx,1:ny+1] = u[1:nx,1:ny+1] + dt*(-c1 -c2 + c3)
     
     # y-momentum equation
     
@@ -83,13 +88,13 @@ for k in range(kmax):
     c1 = (0.25/dx)*((u[1:nx+1,2:ny+1] + u[1:nx+1,1:ny])*(v[2:nx+2,1:ny] + v[1:nx+1,1:ny]) - \
                     (u[0:nx,2:ny+1] + u[0:nx,1:ny])*(v[0:nx,1:ny] + v[1:nx+1,1:ny]))
     
-    v[1:nx+1,1:ny] = v[1:nx+1,1:ny] + dt*(-c1 -c2 + c3)
+    vs[1:nx+1,1:ny] = v[1:nx+1,1:ny] + dt*(-c1 -c2 + c3)
     
-    u[:,0] = -u[:,1] # bottom wall
-    u[:,ny+1] = 2.0*U - u[:,ny] # top wall
+    us[:,0] = -us[:,1] # bottom wall
+    us[:,ny+1] = 2.0*U - us[:,ny] # top wall
     
-    v[0,:] = -v[1,:] # left wall
-    v[nx+1,:] = -v[nx,:] # right wall
+    vs[0,:] = -vs[1,:] # left wall
+    vs[nx+1,:] = -vs[nx,:] # right wall
     
     # compute pressure : Poisson equation
     
@@ -104,8 +109,8 @@ for k in range(kmax):
     
     for i in range(iimax):
         
-        f = (1.0/dt)*((u[1:nx+1,1:ny+1] - u[0:nx,1:ny+1])/dx + \
-                      (v[1:nx+1,1:ny+1] - v[1:nx+1,0:ny])/dy)
+        f = (1.0/dt)*((us[1:nx+1,1:ny+1] - us[0:nx,1:ny+1])/dx + \
+                      (vs[1:nx+1,1:ny+1] - vs[1:nx+1,0:ny])/dy)
         
         r = f[:,:] - (p[2:nx+2,1:ny+1] - 2.0*p[1:nx+1,1:ny+1] + p[0:nx,1:ny+1])/(dx**2) - \
                      (p[1:nx+1,2:ny+2] - 2.0*p[1:nx+1,1:ny+1] + p[1:nx+1,0:ny])/(dy**2)
@@ -113,9 +118,9 @@ for k in range(kmax):
         p[1:nx+1,1:ny+1] = p[1:nx+1,1:ny+1] + (omega/a)*r[:,:] 
         
     
-    u[1:nx,1:ny+1] = u[1:nx,1:ny+1] - dt*(p[2:nx+1,1:ny+1] - p[1:nx,1:ny+1])/dx
+    u[1:nx,1:ny+1] = us[1:nx,1:ny+1] - dt*(p[2:nx+1,1:ny+1] - p[1:nx,1:ny+1])/dx
     
-    v[1:nx+1,1:ny] = v[1:nx+1,1:ny] - dt*(p[1:nx+1,2:ny+1] - p[1:nx+1,1:ny])/dy
+    v[1:nx+1,1:ny] = vs[1:nx+1,1:ny] - dt*(p[1:nx+1,2:ny+1] - p[1:nx+1,1:ny])/dy
     
     kc.append(k)
     ru.append(np.linalg.norm(u[1:nx+1,1:ny+1] - u0)/np.sqrt(nx*ny))
@@ -135,20 +140,30 @@ plt.show()
 #%%
 X,Y = np.meshgrid(x,y)
 
-fig,ax = plt.subplots(1,1, figsize=(8,6))
+fig,ax = plt.subplots(1,2, figsize=(14,5))
 
-cbarticks = np.arange(-0.2,1.8,0.2)
-levels = np.linspace(-0.2,1.6, 41)
-cs = ax.contourf(X,Y,u[:,1:ny+2].T, levels=levels,cmap='jet', extend='both')
-fig.colorbar(cs, ax=ax, ticks = cbarticks)
+cbarticks = np.arange(-0.2,1.2,0.2)
+levels = np.linspace(-0.2,1.0, 101)
+cs = ax[0].contourf(X,Y,u[:,1:ny+2].T, levels=levels,cmap='jet', extend='both')
+fig.colorbar(cs, ax=ax[0], ticks = cbarticks)
+
+cbarticks = np.arange(-0.5,0.7,0.2)
+levels = np.linspace(-0.5,0.5, 101)
+cs = ax[1].contourf(X,Y,v[1:nx+2,:].T, levels=levels,cmap='jet', extend='both')
+fig.colorbar(cs, ax=ax[1], ticks = cbarticks)
 
 plt.show()    
 
 #%%
+expt_data = np.loadtxt(f'plot_u_y_Ghia{int(re)}.csv', delimiter=',', skiprows=1)
+
+#%%
 uc = 0.5*(u[int(ny/2),0:ny+1] + u[int(ny/2),1:ny+2])
-plt.plot(uc,y,'ro-',fillstyle='none',mew=1,ms=8)
+plt.plot(uc,y,'r-',lw=2,fillstyle='none',mew=1,ms=8)
+plt.plot(expt_data[:,1],expt_data[:,0],'go',fillstyle='none',mew=1,ms=8)
 plt.show()            
 
+#%%
 vc = 0.5*(v[0:nx+1,int(nx/2)] + v[1:nx+2,int(nx/2)])
 plt.plot(x,vc,'bs-',fillstyle='none',mew=1,ms=8)
 plt.show()            

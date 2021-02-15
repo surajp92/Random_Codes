@@ -1,6 +1,6 @@
 # parameters of the lid driven cavity problem
 
-re : 1000 # Reynolds number
+re : 1000.0 # Reynolds number
 nx : 100 # discretization in x-direction
 ny : 100 # discretization in y-direction
 lx : 1.0 # length of the domain in x-direction
