@@ -131,14 +131,24 @@ for k in range(kmax):
     
     if ru[k] <= eps and rv[k] <= eps and rp[k] <= eps:
         break
-    
+
+X,Y = np.meshgrid(x,y)
+expt_data = np.loadtxt(f'plot_u_y_Ghia{int(re)}.csv', delimiter=',', skiprows=1)
+
+np.savez(f'solution_{int(re)}_{nx}_{ny}.npz',
+         X = X, Y = Y,
+         u = u, v = v, 
+         kc = kc, 
+         ru = ru, rv = rv, rp = rp, 
+         expt_data = expt_data)    
 
 #%%
+plt.semilogy(kc, ru)
+plt.semilogy(kc, rv)
 plt.semilogy(kc, ru)
 plt.show()
 
 #%%
-X,Y = np.meshgrid(x,y)
 
 fig,ax = plt.subplots(1,2, figsize=(14,5))
 
@@ -154,8 +164,6 @@ fig.colorbar(cs, ax=ax[1], ticks = cbarticks)
 
 plt.show()    
 
-#%%
-expt_data = np.loadtxt(f'plot_u_y_Ghia{int(re)}.csv', delimiter=',', skiprows=1)
 
 #%%
 uc = 0.5*(u[int(ny/2),0:ny+1] + u[int(ny/2),1:ny+2])
