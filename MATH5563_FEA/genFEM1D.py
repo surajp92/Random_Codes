@@ -36,9 +36,11 @@ class genFEM1D:
       if pd == 1:
           self.p = mesh.p
           self.t = mesh.t
+          self.pd = pd
       else:
           self.p = np.zeros((pd*nt + 1, 1))
           self.t = np.zeros((nt,pd+1), dtype='int32')
+          self.pd = pd
           
           self.p[np.arange(0,pd*nt+1,pd)] = mesh.p
           
@@ -54,13 +56,13 @@ class genFEM1D:
           
 
 if __name__ == "__main__":
-    domain = [2,3]
-    n = 3      
-    pd = 2
+    domain = [0,1]
+    n = 5      
+    pd = 1
     mesh = genMesh1D(domain, n)
     fem = genFEM1D(mesh, pd)
     
-    print(fem.p)      
-    print(fem.t)      
+    print('fem.p = \n ', fem.p)      
+    print('fem.t = \n ', fem.t)      
     
     

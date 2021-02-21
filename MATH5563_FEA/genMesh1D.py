@@ -44,7 +44,7 @@ if __name__ == "__main__":
     n = 5      
     mesh = genMesh1D(domain, n)
     
-    print(mesh.p)      
-    print(mesh.t)      
+    print('mesh.p = \n', mesh.p)      
+    print('mesh.t = \n', mesh.t)      
     
     

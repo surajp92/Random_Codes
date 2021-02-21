@@ -9,6 +9,14 @@ Created on Sat Feb  6 11:02:32 2021
 import numpy as np
 import matplotlib.pyplot as plt
 
+font = {'family' : 'Times New Roman',
+        'weight' : 'bold',
+        'size'   : 14}    
+plt.rc('font', **font)
+
+import matplotlib as mpl
+mpl.rcParams['text.usetex'] = True
+
 #%%
 def bas1DP1(x,vert,ibas,dind):
     x1 = vert[0]
@@ -198,19 +206,26 @@ if __name__ == "__main__":
     vert = [0,1]
     dind = 0
     ibas = 3
-    pd = 3
+    pd = 4
     
     x = np.linspace(0,1,101)
     f = bas1DP2(x,vert,ibas,dind)
     
+    fig, ax = plt.subplots(1,1,sharex=True,figsize=(6,5))
+    
     for ibas in range(1,pd+2):
         fg = bas1D(x,vert,ibas,dind,pd)
         # fg1 = bas1DPN(x,vert,ibas,dind,pd)
-        plt.plot(x,fg,'-',lw=3,label=f'$L_{ibas}(x)$')
+        ax.plot(x,fg,'-',lw=3,label=f'$L_{ibas}(x)$')
         # plt.plot(x,fg1,'-.',lw=3,label=f'$L_{ibas}(x)$')
     
-    plt.xlim([0,1])
-    plt.ylim([-0.6,1.2])
-    plt.grid()
-    plt.legend()
+    ax.set_xlim([0,1])
+    ax.set_ylim([-0.6,1.2])
+    ax.grid()
+    ax.set_xlabel('$x$')
+    ax.set_ylabel('$L(x)$')
+    # plt.legend()
+    # plt.subplots_adjust(right=0.5)
+    plt.legend(bbox_to_anchor=(1, 1), loc='upper left', ncol=1)
     plt.show()
+    fig.savefig(f'bas1DP{pd}.png', dpi=300, bbox_inches="tight")
