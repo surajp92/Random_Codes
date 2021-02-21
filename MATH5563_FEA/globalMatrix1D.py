@@ -11,7 +11,7 @@ from localMatrix1D import *
 from scipy.sparse import csc_matrix
 from scipy.sparse import lil_matrix
 
-def globalMatrix1D(f, mesh, fem1, d1, fem2, d2, ng):
+def globalMatrix1D(fun, mesh, fem1, d1, fem2, d2, ng):
     pd1 = fem1.pd
     pd2 = fem2.pd
     
@@ -20,7 +20,7 @@ def globalMatrix1D(f, mesh, fem1, d1, fem2, d2, ng):
     
     for k in range(np.shape(mesh.t)[0]):
         vert = mesh.p[mesh.t[k,:]]
-        matK = localMatrix1D(f, vert, pd1, d1, pd2, d2, ng)
+        matK = localMatrix1D(fun, vert, pd1, d1, pd2, d2, ng)
         
         ii,jj = np.meshgrid(fem1.t[k,:], fem2.t[k,:], indexing='ij')
         M[ii, jj] += matK 

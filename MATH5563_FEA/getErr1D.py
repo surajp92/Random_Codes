@@ -9,7 +9,7 @@ Created on Sat Feb 20 20:13:02 2021
 import numpy as np
 from getErrElem1D import *
 
-def getErr1D(uh, f, mesh, fem, ng, dind):
+def getErr1D(uh, fun, mesh, fem, ng, dind):
     nt = np.shape(mesh.t)[0]
     pd = fem.pd
     errK = np.zeros((nt,1))
@@ -19,7 +19,7 @@ def getErr1D(uh, f, mesh, fem, ng, dind):
         
         uhK = uh[fem.t[k,:]] #.flatten()
         
-        errK[k,:] = getErrElem1D(uhK, f, vert, pd, dind, ng)
+        errK[k,:] = getErrElem1D(uhK, fun, vert, pd, dind, ng)
     
     err = np.sqrt(np.sum(errK * errK))
     

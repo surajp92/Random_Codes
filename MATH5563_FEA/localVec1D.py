@@ -10,11 +10,11 @@ import numpy as np
 from gaussQuad1D import *
 from bas1DP import *
 
-def localVec1D(f, vert, pd, dind, ng):
+def localVec1D(fun, vert, pd, dind, ng):
     b = np.zeros((pd+1,1))
     gw, gx = gaussQuad1D(vert, ng)
     
-    fv = f(gx)
+    fv = fun(gx)
     
     for i in range(pd+1):
         Li = bas1DP(gx, vert, pd, i+1, dind)

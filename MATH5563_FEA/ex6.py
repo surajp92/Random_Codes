@@ -29,21 +29,21 @@ domain = [2,3]
 pd = 4
 ng = 5
 
-f = lambda x: np.sin(2.0*np.pi*x) + np.exp(-x)
-df = lambda x: 2.0*np.pi*np.cos(2.0*np.pi*x) - np.exp(-x)
+fun = lambda x: np.sin(2.0*np.pi*x) + np.exp(-x)
+dfun = lambda x: 2.0*np.pi*np.cos(2.0*np.pi*x) - np.exp(-x)
 
 file = open(f'ex6_interpolation_out_{pd}.log', 'w')
-sys.stdout = file
+# sys.stdout = file
 
 for i in range(6):
     n = int(5*(2**i))
     mesh = genMesh1D(domain, n)
     fem = genFEM1D(mesh, pd)
     
-    uh = f(fem.p)
+    uh = fun(fem.p)
     
-    errL2, errKL2 = getErr1D(uh, f, mesh, fem, ng, 0)
-    errH1, errKH2 = getErr1D(uh, df, mesh, fem, ng, 1)
+    errL2, errKL2 = getErr1D(uh, fun, mesh, fem, ng, 0)
+    errH1, errKH2 = getErr1D(uh, dfun, mesh, fem, ng, 1)
     
     print('#----------------------------------------#')
     print('n = %d' % (n))

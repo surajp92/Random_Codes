@@ -35,8 +35,8 @@ ng = 5
 file = open(f'ex7_projection_out_{pd}.log', 'w')
 sys.stdout = file
 
-f = lambda x: np.sin(2.0*np.pi*x) + np.exp(-x)
-df = lambda x: 2.0*np.pi*np.cos(2.0*np.pi*x) - np.exp(-x)
+fun = lambda x: np.sin(2.0*np.pi*x) + np.exp(-x)
+dfun = lambda x: 2.0*np.pi*np.cos(2.0*np.pi*x) - np.exp(-x)
 onefun = lambda x : 1.0
 
 for i in range(4):
@@ -45,12 +45,12 @@ for i in range(4):
     fem = genFEM1D(mesh, pd)
     
     M = globalMatrix1D(onefun, mesh, fem, 0, fem, 0, ng)
-    b = globalVec1D(f, mesh, fem, 0, ng)
+    b = globalVec1D(fun, mesh, fem, 0, ng)
 
     uh = inv(M) @ b
     
-    errL2, errKL2 = getErr1D(uh, f, mesh, fem, ng, 0)
-    errH1, errKH2 = getErr1D(uh, df, mesh, fem, ng, 1)
+    errL2, errKL2 = getErr1D(uh, fun, mesh, fem, ng, 0)
+    errH1, errKH2 = getErr1D(uh, dfun, mesh, fem, ng, 1)
     
     print('#----------------------------------------#')
     print('n = %d' % (n))

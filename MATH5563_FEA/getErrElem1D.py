@@ -10,10 +10,10 @@ import numpy as np
 from gaussQuad1D import *
 from evalFEfun1D import *
 
-def getErrElem1D(uhK, f, vert, pd, dind, ng):
+def getErrElem1D(uhK, fun, vert, pd, dind, ng):
     gw, gx = gaussQuad1D(vert, ng)
     
-    tu = f(gx)
+    tu = fun(gx)
     
     uh = evalFEfun1D(gx, uhK, vert, pd, dind)
     
