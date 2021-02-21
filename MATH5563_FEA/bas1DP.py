@@ -162,7 +162,7 @@ def bas1DP4(x,vert,ibas,dind):
             
     return f
 
-def bas1D(x,vert,ibas,dind,pd):
+def bas1DP(x,vert,pd,ibas,dind):
     if pd == 1:
         f = bas1DP1(x,vert,ibas,dind)
     if pd == 2:

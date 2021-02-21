@@ -20,8 +20,8 @@ import numpy as np
 
 def gaussRef1D(ng):
     
-    gw = np.zeros((ng,1))
-    gx = np.zeros((ng,1))
+    gw = np.zeros(ng)
+    gx = np.zeros(ng)
     
     if ng == 1: 
         gw[0] = 2.0000000000000000

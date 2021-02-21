@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Feb 20 22:38:06 2021
+Created on Sun Feb 21 11:49:22 2021
 
 @author: suraj
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.sparse.linalg import inv
 
 from genMesh1D import *
 from genFEM1D import *
 from evalFEfun1D import *
 from getErr1D import *
+from globalVec1D import *
+from globalMatrix1D import *
 
 font = {'family' : 'Times New Roman',
         'weight' : 'bold',
@@ -29,18 +32,22 @@ domain = [2,3]
 pd = 4
 ng = 5
 
-f = lambda x: np.sin(2.0*np.pi*x) + np.exp(-x)
-df = lambda x: 2.0*np.pi*np.cos(2.0*np.pi*x) - np.exp(-x)
-
-file = open(f'ex6_interpolation_out_{pd}.log', 'w')
+file = open(f'ex7_projection_out_{pd}.log', 'w')
 sys.stdout = file
 
-for i in range(6):
+f = lambda x: np.sin(2.0*np.pi*x) + np.exp(-x)
+df = lambda x: 2.0*np.pi*np.cos(2.0*np.pi*x) - np.exp(-x)
+onefun = lambda x : 1.0
+
+for i in range(4):
     n = int(5*(2**i))
     mesh = genMesh1D(domain, n)
     fem = genFEM1D(mesh, pd)
     
-    uh = f(fem.p)
+    M = globalMatrix1D(onefun, mesh, fem, 0, fem, 0, ng)
+    b = globalVec1D(f, mesh, fem, 0, ng)
+
+    uh = inv(M) @ b
     
     errL2, errKL2 = getErr1D(uh, f, mesh, fem, ng, 0)
     errH1, errKH2 = getErr1D(uh, df, mesh, fem, ng, 1)
@@ -57,7 +64,6 @@ for i in range(6):
     
     errL2_0 = errL2
     errH1_0 = errH1
-    
+
 sys.stdout = orig_stdout
 file.close()
-         

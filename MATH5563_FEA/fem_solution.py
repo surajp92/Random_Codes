@@ -36,7 +36,7 @@ fig, ax = plt.subplots(1,1,sharex=True,figsize=(6,5))
     
 for k in range(n):
     vert = mesh.p[mesh.t[k,:]]
-    x = np.linspace(vert[0], vert[1], 101)
+    x = np.linspace(vert[0], vert[1], 101).flatten()
     
     uhK = uh[fem.t[k,:]]
     u = evalFEfun1D(x, uhK, vert, pd, dind)

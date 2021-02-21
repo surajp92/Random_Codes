@@ -17,7 +17,7 @@ def getErr1D(uh, f, mesh, fem, ng, dind):
     for k in range(nt):
         vert = mesh.p[mesh.t[k,:]]
         
-        uhK = uh[fem.t[k,:]]
+        uhK = uh[fem.t[k,:]] #.flatten()
         
         errK[k,:] = getErrElem1D(uhK, f, vert, pd, dind, ng)
     
