@@ -21,13 +21,15 @@ plt.rc('font', **font)
 
 import matplotlib as mpl
 mpl.rcParams['text.usetex'] = True
+from matplotlib.lines import Line2D
 
 import sys
 orig_stdout = sys .stdout
 
 domain = [2,3]
-pd = 4
+pd = 1
 ng = 5
+dind = 0
 
 fun = lambda x: np.sin(2.0*np.pi*x) + np.exp(-x)
 dfun = lambda x: 2.0*np.pi*np.cos(2.0*np.pi*x) - np.exp(-x)
@@ -35,12 +37,33 @@ dfun = lambda x: 2.0*np.pi*np.cos(2.0*np.pi*x) - np.exp(-x)
 file = open(f'ex6_interpolation_out_{pd}.log', 'w')
 # sys.stdout = file
 
-for i in range(6):
+fig, axs = plt.subplots(1,4,sharex=True,sharey=True,figsize=(16,4))
+
+for i in range(4):
     n = int(5*(2**i))
     mesh = genMesh1D(domain, n)
     fem = genFEM1D(mesh, pd)
     
     uh = fun(fem.p)
+    
+    for k in range(n):
+        vert = mesh.p[mesh.t[k,:]]
+        x = np.linspace(vert[0], vert[1], 101)
+        
+        uhK = uh[fem.t[k,:]]
+        u = evalFEfun1D(x, uhK, vert, pd, dind)
+        
+        axs[i].plot(x,fun(x),'k',lw=2)
+        axs[i].plot(x,u,'r',lw=2)
+        
+    axs[i].grid()
+    custom_lines = [Line2D([0], [0], color='k', lw=2),
+                    Line2D([0], [0], color='r', lw=2)]
+    axs[i].legend(custom_lines, ['$u$', '$Iu$'])
+    axs[i].set_xlim(domain)   
+    axs[i].set_xlabel('$x$')
+    if i == 0:
+        axs[i].set_ylabel('$U_h(x)$') 
     
     errL2, errKL2 = getErr1D(uh, fun, mesh, fem, ng, 0)
     errH1, errKH2 = getErr1D(uh, dfun, mesh, fem, ng, 1)
@@ -60,4 +83,7 @@ for i in range(6):
     
 sys.stdout = orig_stdout
 file.close()
+
+plt.show()
+fig.savefig('ex6.png', dpi=300, bbox_inches="tight")
          

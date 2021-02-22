@@ -31,12 +31,15 @@ orig_stdout = sys .stdout
 domain = [0,1]
 pd = 2
 ng = 5
+dind = 0
 
 fun = lambda x: x**(2.5)
 dfun = lambda x: 2.5*x**(1.5)
 onefun = lambda x : 1.0
 
 error_list = []
+fig, axs = plt.subplots(4,5,sharex=True,sharey=True,figsize=(20,16))
+
 for pd in [1,2,3,4]:
     file = open(f'./logs/hw2_problem2_projection_out_{pd}.log', 'w')
     sys.stdout = file
@@ -50,6 +53,28 @@ for pd in [1,2,3,4]:
         b = globalVec1D(fun, mesh, fem, 0, ng)
     
         uh = inv(M) @ b
+        
+        for k in range(n):
+            vert = mesh.p[mesh.t[k,:]]
+            x = np.linspace(vert[0], vert[1], 101)
+            
+            uhK = uh[fem.t[k,:]]
+            u = evalFEfun1D(x, uhK, vert, pd, dind)
+            
+            axs[pd-1,i].plot(x,fun(x),'k',lw=2)
+            axs[pd-1,i].plot(x,u,'r',lw=1)
+            
+        axs[pd-1,i].grid()
+        custom_lines = [Line2D([0], [0], color='k', lw=2),
+                        Line2D([0], [0], color='r', lw=1)]
+        axs[pd-1,i].legend(custom_lines, ['$u$', '$Pu$'])
+        axs[pd-1,i].set_xlim(domain) 
+        axs[pd-1,i].set_title(f'$p$={pd}, $h$=1/{n}')
+        if pd == 4:
+            axs[pd-1,i].set_xlabel('$x$')
+        if i == 0:
+            axs[pd-1,i].set_ylabel('$u(x)$') 
+            
         
         errL2, errKL2 = getErr1D(uh, fun, mesh, fem, ng, 0)
         errH1, errKH2 = getErr1D(uh, dfun, mesh, fem, ng, 1)
@@ -72,6 +97,10 @@ for pd in [1,2,3,4]:
 sys.stdout = orig_stdout
 file.close()
 
+plt.show()
+fig.savefig('./logs/hw2_problem2_projection_u.png', dpi=300, bbox_inches="tight")
+
+
 #%%
 fig, axs = plt.subplots(1,2,sharex=True,figsize=(12,5))
 error_list = np.array(error_list)
@@ -83,8 +112,8 @@ for pd in [1,2,3,4]:
 
 axs[0].set_ylim([1e-14,1e0])
 axs[1].set_ylim([1e-14,1e2])
-axs[0].set_xscale('log', base=2)
-axs[1].set_xscale('log', base=2)
+axs[0].set_xscale('log', basex=2)
+axs[1].set_xscale('log', basex=2)
 axs[0].legend()
 axs[1].legend()
 plt.show()
