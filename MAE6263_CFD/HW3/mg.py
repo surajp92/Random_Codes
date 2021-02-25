@@ -14,8 +14,8 @@ from scipy.fftpack import dst, idst
 import matplotlib.pyplot as plt 
 import time
 
-nx = 128
-ny = 128
+nx = 512
+ny = 512
 
 x_l = 0.0
 x_r = 1.0
@@ -32,13 +32,19 @@ xm, ym = np.meshgrid(x,y, indexing='ij')
 
 km = 16.0
 c1 = (1.0/km)**2
-c2 = -8.0*np.pi**2
+c2 = -2.0*np.pi**2
 
-ue = np.sin(2.0*np.pi*xm)*np.sin(2.0*np.pi*ym) + \
-     c1*np.sin(km*2.0*np.pi*xm)*np.sin(km*2.0*np.pi*ym)
+ue = np.sin(2.0*np.pi*xm) * np.sin(2.0*np.pi*ym) + \
+            c1*np.sin(16.0*np.pi*xm) * np.sin(16.0*np.pi*ym)
 
-f = c2*np.sin(2.0*np.pi*xm)*np.sin(2.0*np.pi*ym) + \
-    c2*np.sin(km*2.0*np.pi*xm)*np.sin(km*2.0*np.pi*ym)
+f = 4.0*c2*np.sin(2.0*np.pi*xm) * np.sin(2.0*np.pi*ym) + \
+         c2*np.sin(16.0*np.pi*xm) * np.sin(16.0*np.pi*ym)
+                 
+# ue = np.sin(2.0*np.pi*xm)*np.sin(2.0*np.pi*ym) + \
+#      c1*np.sin(km*np.pi*xm)*np.sin(km*np.pi*ym)
+
+# f = 4.0*c2*np.sin(2.0*np.pi*xm)*np.sin(2.0*np.pi*ym) + \
+#     c2*np.sin(km*np.pi*xm)*np.sin(km*np.pi*ym)
 
 #%%
 def compute_residual(nx, ny, dx, dy, f, u_n):
@@ -118,6 +124,16 @@ def gauss_seidel_mg(nx, ny, dx, dy, f, un, V):
     rt = np.zeros((nx+1,ny+1))
     den = -2.0/dx**2 - 2.0/dy**2
     omega = 1.0
+    unr = np.copy(un)
+    
+    # for k in range(V):
+    #     for j in range(1,nx):
+    #         for i in range(1,ny):
+    #             rt[i,j] = f[i,j] - \
+    #                   (unr[i+1,j] - 2.0*unr[i,j] + unr[i-1,j])/dx**2 - \
+    #                   (unr[i,j+1] - 2.0*unr[i,j] + unr[i,j-1])/dy**2
+                      
+    #             unr[i,j] = unr[i,j] + omega*rt[i,j]/den
     
     ii = np.arange(1,nx)
     jj = np.arange(1,ny)
@@ -125,20 +141,20 @@ def gauss_seidel_mg(nx, ny, dx, dy, f, un, V):
     
     for k in range(V):
         rt[i,j] = f[i,j] - \
-                  (un[i+1,j] - 2.0*un[i,j] + un[i-1,j])/dx**2 - \
-                  (un[i,j+1] - 2.0*un[i,j] + un[i,j-1])/dy**2
+                  (unr[i+1,j] - 2.0*unr[i,j] + unr[i-1,j])/dx**2 - \
+                  (unr[i,j+1] - 2.0*unr[i,j] + unr[i,j-1])/dy**2
                   
-        un[i,j] = un[i,j] + omega*rt[i,j]/den
+        unr[i,j] = unr[i,j] + omega*rt[i,j]/den
     
-    return un
+    return unr
 
         
 #%%    
-n_level = 7
-max_iterations = 2000
-v1 = 3
-v2 = 3
-v3 = 3
+n_level = 8
+max_iterations = 10
+v1 = 2
+v2 = 2
+v3 = 2
     
 u_n = np.zeros((nx+1,ny+1))    
 u_mg = []
@@ -149,12 +165,12 @@ f_mg.append(f)
 
 r = compute_residual(nx, ny, dx, dy, f_mg[0], u_mg[0])
 
-rms = np.linalg.norm(r)/np.sqrt(np.size(r))
+rms = np.linalg.norm(r)/np.sqrt((nx-1)*(ny-1))
 init_rms = np.copy(rms)
 
-print('%0.3i %0.3e ' % (0, rms/init_rms))
+print('%0.2i %0.5e %0.5e' % (0, rms, rms/init_rms))
 
-if nx < nx**n_level:
+if nx < 2**n_level:
     print("Number of levels exceeds the possible number.\n")
 
 lnx = np.zeros(n_level, dtype='int')
@@ -189,33 +205,39 @@ prol_fine = np.zeros((lnx[1]+1, lny[1]+1))
 # the size keeps on changing
 temp_residual = np.zeros((lnx[1]+1, lny[1]+1))    
 
+start = time.time()
+
 # start main iteration loop
 for iteration_count in range(max_iterations):  
     k = 0
-    u_mg[k] = gauss_seidel_mg(lnx[k], lny[k], ldx[k], ldy[k], f_mg[k], u_mg[k], v1)
+    u_mg[k][:,:] = gauss_seidel_mg(lnx[k], lny[k], ldx[k], ldy[k], f_mg[k], u_mg[k], v1)
     
     r = compute_residual(lnx[k], lny[k], ldx[k], ldy[k], f_mg[k], u_mg[k])
     
-    rms = np.linalg.norm(r)/np.sqrt(np.size(r))
+    rms = np.linalg.norm(r)/np.sqrt((nx-1)*(ny-1))
     
-    print('%0.3i %0.3e ' % (iteration_count+1, rms/init_rms))
+    print('%0.2i %0.5e %0.5e' % (iteration_count+1, rms, rms/init_rms))
     
-    if rms/init_rms <= 1e-6:
+    if rms/init_rms <= 1e-10:
         break
     
     for k in range(1,n_level):
-        if k == 1:
-            temp_residual = r
-        else:
-            temp_residual = compute_residual(lnx[k-1], lny[k-1], ldx[k-1], ldy[k-1], 
+        # print(k, lnx[k])
+        # if k == 1:
+        #     temp_residual = r
+        # else:
+        temp_residual = compute_residual(lnx[k-1], lny[k-1], ldx[k-1], ldy[k-1], 
                                              f_mg[k-1], u_mg[k-1])
             
-            f_mg[k] = restriction(lnx[k-1], lny[k-1], lnx[k], lny[k], temp_residual)
-            
-            if k < n_level-1:
-                u_mg[k] = gauss_seidel_mg(lnx[k], lny[k], ldx[k], ldy[k], f_mg[k], u_mg[k], v1)
-            elif k == n_level-1:
-                u_mg[k] = gauss_seidel_mg(lnx[k], lny[k], ldx[k], ldy[k], f_mg[k], u_mg[k], v2)
+        f_mg[k] = restriction(lnx[k-1], lny[k-1], lnx[k], lny[k], temp_residual)
+        
+        # solution at kth level to zero
+        u_mg[k][:,:] = 0.0
+        
+        if k < n_level-1:
+            u_mg[k][:,:] = gauss_seidel_mg(lnx[k], lny[k], ldx[k], ldy[k], f_mg[k], u_mg[k], v1)
+        elif k == n_level-1:
+            u_mg[k][:,:] = gauss_seidel_mg(lnx[k], lny[k], ldx[k], ldy[k], f_mg[k], u_mg[k], v2)
     
     for k in range(n_level-1,0,-1):
         prol_fine = prolongation(lnx[k], lny[k], lnx[k-1], lny[k-1],
@@ -227,10 +249,12 @@ for iteration_count in range(max_iterations):
         
         u_mg[k-1][i,j] = u_mg[k-1][i,j] + prol_fine[i,j]
         
-        u_mg[k-1] = gauss_seidel_mg(lnx[k-1], lny[k-1], ldx[k-1], ldy[k-1],
+        u_mg[k-1][:,:] = gauss_seidel_mg(lnx[k-1], lny[k-1], ldx[k-1], ldy[k-1],
                             f_mg[k-1], u_mg[k-1], v3)
 
 un = u_mg[0]
+
+print('Time = ', time.time() - start)
 
 #%%
 plt.contourf(xm, ym, ue, 120, cmap='jet')
