@@ -14,8 +14,8 @@ from scipy.fftpack import dst, idst
 import matplotlib.pyplot as plt 
 import time
 
-nx = 64
-ny = 64
+nx = 128
+ny = 128
 
 x_l = 0.0
 x_r = 1.0
@@ -43,39 +43,48 @@ f = c2*np.sin(2.0*np.pi*xm)*np.sin(2.0*np.pi*ym) + \
 #%%
 def compute_residual(nx, ny, dx, dy, f, u_n):
     r = np.zeros((nx+1, ny+1))
+    d2udx2 = np.zeros((nx+1, ny+1))
+    d2udy2 = np.zeros((nx+1, ny+1))
     ii = np.arange(1,nx)
     jj = np.arange(1,ny)
     i,j = np.meshgrid(ii,jj,indexing='ij')
     
-    d2udx2 = (u_n[i+1,j] - 2*u_n[i,j] + u_n[i-1,j])/(dx**2)
-    d2udy2 = (u_n[i,j+1] - 2*u_n[i,j] + u_n[i,j-1])/(dy**2)
-    r[i,j] = f[i,j]  - d2udx2 - d2udy2
+    d2udx2[i,j] = (u_n[i+1,j] - 2*u_n[i,j] + u_n[i-1,j])/(dx**2)
+    d2udy2[i,j] = (u_n[i,j+1] - 2*u_n[i,j] + u_n[i,j-1])/(dy**2)
+    r[i,j] = f[i,j]  - d2udx2[i,j] - d2udy2[i,j]
+    
+    del d2udx2, d2udy2
     
     return r
     
 def restriction(nxf, nyf, nxc, nyc, r):
     ec = np.zeros((nxc+1, nyc+1))
+    center = np.zeros((nxc+1, nyc+1))
+    grid = np.zeros((nxc+1, nyc+1))
+    corner = np.zeros((nxc+1, nyc+1))
     ii = np.arange(1,nxc)
     jj = np.arange(1,nyc)
     i,j = np.meshgrid(ii,jj,indexing='ij')
     
     # grid index for fine grid for the same coarse point
-    center = 4.0*r[2*i, 2*j]
+    center[i,j] = 4.0*r[2*i, 2*j]
     
     # E, W, N, S with respect to coarse grid point in fine grid
-    grid = 2.0*(r[2*i, 2*j+1] + r[2*i, 2*j-1] +
+    grid[i,j] = 2.0*(r[2*i, 2*j+1] + r[2*i, 2*j-1] +
                 r[2*i+1, 2*j] + r[2*i-1, 2*j])
     
     # NE, NW, SE, SW with respect to coarse grid point in fine grid
-    corner = 1.0*(r[2*i+1, 2*j+1] + r[2*i+1, 2*j-1] +
+    corner[i,j] = 1.0*(r[2*i+1, 2*j+1] + r[2*i+1, 2*j-1] +
                   r[2*i-1, 2*j+1] + r[2*i-1, 2*j-1])
     
     # restriction using trapezoidal rule
-    ec[i,j] = (center + grid + corner)/16.0
+    ec[i,j] = (center[i,j] + grid[i,j] + corner[i,j])/16.0
+    
+    del center, grid, corner
     
     i = np.arange(0,nxc+1)
     ec[i,0] = r[2*i, 0]
-    ec[i,nyc] = r[2*j, nyf]
+    ec[i,nyc] = r[2*i, nyf]
     
     j = np.arange(0,nyc+1)
     ec[0,j] = r[0, 2*j]
@@ -83,7 +92,7 @@ def restriction(nxf, nyf, nxc, nyc, r):
     
     return ec
 
-def proplongation(nxc, nyc, nxf, nyf, unc):
+def prolongation(nxc, nyc, nxf, nyf, unc):
     ef = np.zeros((nxf+1, nyf+1))
     ii = np.arange(0,nxc)
     jj = np.arange(0,nyc)
@@ -105,7 +114,7 @@ def proplongation(nxc, nyc, nxf, nyf, unc):
     
     return ef
 
-def gaiss_seidel_mg(nx, ny, dx, dy, f, un, V):
+def gauss_seidel_mg(nx, ny, dx, dy, f, un, V):
     rt = np.zeros((nx+1,ny+1))
     den = -2.0/dx**2 - 2.0/dy**2
     omega = 1.0
@@ -120,11 +129,118 @@ def gaiss_seidel_mg(nx, ny, dx, dy, f, un, V):
                   (un[i,j+1] - 2.0*un[i,j] + un[i,j-1])/dy**2
                   
         un[i,j] = un[i,j] + omega*rt[i,j]/den
+    
+    return un
+
         
 #%%    
+n_level = 7
+max_iterations = 2000
+v1 = 3
+v2 = 3
+v3 = 3
+    
 u_n = np.zeros((nx+1,ny+1))    
 u_mg = []
 f_mg = []    
 
 u_mg.append(u_n)
 f_mg.append(f)
+
+r = compute_residual(nx, ny, dx, dy, f_mg[0], u_mg[0])
+
+rms = np.linalg.norm(r)/np.sqrt(np.size(r))
+init_rms = np.copy(rms)
+
+print('%0.3i %0.3e ' % (0, rms/init_rms))
+
+if nx < nx**n_level:
+    print("Number of levels exceeds the possible number.\n")
+
+lnx = np.zeros(n_level, dtype='int')
+lny = np.zeros(n_level, dtype='int')
+ldx = np.zeros(n_level)
+ldy = np.zeros(n_level)
+
+
+# initialize the mesh details at fine level
+lnx[0] = nx
+lny[0] = ny
+ldx[0] = dx
+ldy[0] = dy
+
+for i in range(1,n_level):
+    lnx[i] = int(lnx[i-1]/2)
+    lny[i] = int(lny[i-1]/2)
+    ldx[i] = ldx[i-1]*2
+    ldy[i] = ldy[i-1]*2
+    
+    fc = np.zeros((lnx[i]+1, lny[i]+1))
+    unc = np.zeros((lnx[i]+1, lny[i]+1))
+    
+    u_mg.append(unc)
+    f_mg.append(fc)
+
+# allocate matrix for storage at fine level
+# residual at fine level is already defined at global level
+prol_fine = np.zeros((lnx[1]+1, lny[1]+1))    
+
+# temporaty residual which is restricted to coarse mesh error
+# the size keeps on changing
+temp_residual = np.zeros((lnx[1]+1, lny[1]+1))    
+
+# start main iteration loop
+for iteration_count in range(max_iterations):  
+    k = 0
+    u_mg[k] = gauss_seidel_mg(lnx[k], lny[k], ldx[k], ldy[k], f_mg[k], u_mg[k], v1)
+    
+    r = compute_residual(lnx[k], lny[k], ldx[k], ldy[k], f_mg[k], u_mg[k])
+    
+    rms = np.linalg.norm(r)/np.sqrt(np.size(r))
+    
+    print('%0.3i %0.3e ' % (iteration_count+1, rms/init_rms))
+    
+    if rms/init_rms <= 1e-6:
+        break
+    
+    for k in range(1,n_level):
+        if k == 1:
+            temp_residual = r
+        else:
+            temp_residual = compute_residual(lnx[k-1], lny[k-1], ldx[k-1], ldy[k-1], 
+                                             f_mg[k-1], u_mg[k-1])
+            
+            f_mg[k] = restriction(lnx[k-1], lny[k-1], lnx[k], lny[k], temp_residual)
+            
+            if k < n_level-1:
+                u_mg[k] = gauss_seidel_mg(lnx[k], lny[k], ldx[k], ldy[k], f_mg[k], u_mg[k], v1)
+            elif k == n_level-1:
+                u_mg[k] = gauss_seidel_mg(lnx[k], lny[k], ldx[k], ldy[k], f_mg[k], u_mg[k], v2)
+    
+    for k in range(n_level-1,0,-1):
+        prol_fine = prolongation(lnx[k], lny[k], lnx[k-1], lny[k-1],
+                         u_mg[k])
+        
+        ii = np.arange(1,lnx[k-1])
+        jj = np.arange(1,lny[k-1])
+        i,j = np.meshgrid(ii,jj,indexing='ij')
+        
+        u_mg[k-1][i,j] = u_mg[k-1][i,j] + prol_fine[i,j]
+        
+        u_mg[k-1] = gauss_seidel_mg(lnx[k-1], lny[k-1], ldx[k-1], ldy[k-1],
+                            f_mg[k-1], u_mg[k-1], v3)
+
+un = u_mg[0]
+
+#%%
+plt.contourf(xm, ym, ue, 120, cmap='jet')
+plt.colorbar()
+plt.show()
+
+plt.contourf(xm, ym, un, 120, cmap='jet')
+plt.colorbar()
+plt.show()        
+                
+                
+print(np.linalg.norm(un-ue)/np.sqrt((nx*ny)))    
+    
