@@ -22,8 +22,6 @@ from scipy.fftpack import dst, idst
 from scipy.ndimage import gaussian_filter
 import yaml
 
-from mg import *
-
 font = {'family' : 'Times New Roman',
         'size'   : 14}    
 plt.rc('font', **font)

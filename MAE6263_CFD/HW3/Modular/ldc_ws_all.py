@@ -22,7 +22,7 @@ from scipy.fftpack import dst, idst
 from scipy.ndimage import gaussian_filter
 import yaml
 
-from poisson_solvers import *
+from poisson import *
 from rhs import *
 from euler import *
 from rk3 import *
@@ -33,59 +33,12 @@ plt.rc('font', **font)
 
 import matplotlib as mpl
 mpl.rcParams['text.usetex'] = True
-mpl.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath}']
+# mpl.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath}']
 
-
-#%%
-def grad_spectral(nx,ny,u):
-    
-    '''
-    compute the gradient of u using spectral differentiation
-    
-    Inputs
-    ------
-    nx,ny : number of grid points in x and y direction on fine grid
-    u : solution field 
-    
-    Output
-    ------
-    ux : du/dx (size = [nx+1,ny+1])
-    uy : du/dy (size = [nx+1,ny+1])
-    '''
-    
-    ux = np.empty((nx+1,ny+1))
-    uy = np.empty((nx+1,ny+1))
-    
-    uf = np.fft.fft2(u[0:nx,0:ny])
-
-    kx = np.fft.fftfreq(nx,1/nx)
-    ky = np.fft.fftfreq(ny,1/ny)
-    
-    kx = kx.reshape(nx,1)
-    ky = ky.reshape(1,ny)
-    
-    uxf = 1.0j*kx*uf
-    uyf = 1.0j*ky*uf 
-    
-    ux[0:nx,0:ny] = np.real(np.fft.ifft2(uxf))
-    uy[0:nx,0:ny] = np.real(np.fft.ifft2(uyf))
-    
-    # periodic bc
-    ux[:,ny] = ux[:,0]
-    ux[nx,:] = ux[0,:]
-    ux[nx,ny] = ux[0,0]
-    
-    # periodic bc
-    uy[:,ny] = uy[:,0]
-    uy[nx,:] = uy[0,:]
-    uy[nx,ny] = uy[0,0]
-    
-    return ux,uy
 
 #%%
 # set periodic boundary condition for ghost nodes. 
 # Index (0,1) and (n+3,n+4) are the ghost boundary locations
-@jit
 def bc(nx,ny,w,s):
     
     w[:,0] = -(2.0/dy**2)*(s[:,1]) # bottom wall
@@ -103,6 +56,8 @@ with open(r'ldc_parameters.yaml') as file:
 #    input_data = yaml.load(file)
     
 file.close()
+
+global isolver 
 
 nx = input_data['nx']
 ny = input_data['ny']
@@ -175,9 +130,9 @@ for k in range(nt+1):
     s0 = np.copy(s)
     
     if its == 1:    
-        w,s = euler(nx,ny,dx,dy,dt,re,w,s,ii,jj,isolver,ip,bc)
+        w,s = euler(nx,ny,dx,dy,dt,re,w,s,ii,jj,input_data,bc)
     elif its == 2:
-        w,s = rk3(nx,ny,dx,dy,dt,re,w,s,t,ii,jj,isolver,ip,bc)
+        w,s = rk3(nx,ny,dx,dy,dt,re,w,s,t,ii,jj,input_data,bc)
 
     kc[k] = k
     rw[k] = np.linalg.norm(w - w0)/np.sqrt(np.size(w))
@@ -195,7 +150,7 @@ rs = rs[:k+1]
     
 total_clock_time = tm.time() - clock_time_init
 print('Total clock time=', total_clock_time)
-np.save('cpu_time.npy',total_clock_time)
+np.save('cpu_time.txt',total_clock_time)
 
 #%%
 fig, ax = plt.subplots(1,1,figsize=(8,6))
@@ -218,10 +173,6 @@ fig.tight_layout()
 fig.savefig('ldc_ws.png', bbox_inches = 'tight', pad_inches = 0, dpi = 300)
 
 #%%
-#sx, sy = grad_spectral(nx,ny,s)
-#u = sy
-#v = -sx
-
 u = np.zeros((nx+1,ny+1))
 v = np.zeros((nx+1,ny+1))
 u[:,ny] = 1.0

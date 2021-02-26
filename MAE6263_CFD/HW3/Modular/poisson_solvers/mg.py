@@ -13,6 +13,7 @@ from scipy.fftpack import dst, idst
 #from numpy.fft import rfft,irfft
 import matplotlib.pyplot as plt 
 import time
+import yaml
 
 #%%
 def compute_residual(nx, ny, dx, dy, f, u_n):
@@ -117,8 +118,20 @@ def gauss_seidel_mg(nx, ny, dx, dy, f, un, V):
     
     return unr
 
-def mg_n_solver(f, dx, dy, nx, ny, v1=2, v=22, v3=2, max_iterations=20, n_level=5,
-                tolerance=1e-4, iprint=False):
+# def mg_n_solver(f, dx, dy, nx, ny, v1=2, v2=2, v3=2, max_iterations=20, n_level=5,
+#                 tolerance=1e-4, iprint=False):
+def mg_n_solver(f, dx, dy, nx, ny, input_data, iprint=False):
+    
+    # with open(r'../ldc_parameters.yaml') as file:
+    #     input_data = yaml.load(file, Loader=yaml.FullLoader)
+    
+    n_level = input_data['nlevel']
+    max_iterations = input_data['pmax']
+    v1 = input_data['v1']
+    v2 = input_data['v2']
+    v3 = input_data['v3']
+    tolerance = float(input_data['tolerance'])
+
     un = np.zeros((nx+1,ny+1))    
     u_mg = []
     f_mg = []    
