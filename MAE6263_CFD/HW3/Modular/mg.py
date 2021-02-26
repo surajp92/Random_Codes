@@ -117,7 +117,8 @@ def gauss_seidel_mg(nx, ny, dx, dy, f, un, V):
     
     return unr
 
-def mg_n_solver(f, dx, dy, nx, ny, v1, v2, v3, max_iterations, n_level,tolerance, iprint=False):
+def mg_n_solver(f, dx, dy, nx, ny, v1=2, v=22, v3=2, max_iterations=20, n_level=5,
+                tolerance=1e-4, iprint=False):
     un = np.zeros((nx+1,ny+1))    
     u_mg = []
     f_mg = []    
