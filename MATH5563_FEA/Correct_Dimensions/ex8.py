@@ -31,12 +31,12 @@ from matplotlib.lines import Line2D
 #%% 1 Domain, PDE, BC
 domain = [0,1]
 pde = pdeEx1()
-bc = [1,2] # Dirichlet on left and Neumann on Right side
+bc = [1,1] # Dirichlet on left and Neumann on Right side
 
 #%% 2 Generate Mesh and FEM
 n = 20
-pd = 2
-ng = 2
+pd = 3
+ng = 4
 
 mesh = genMesh1D(domain, n)
 fem = genFEM1D(mesh, pd)
