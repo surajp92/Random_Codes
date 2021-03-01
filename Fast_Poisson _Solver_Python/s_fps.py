@@ -73,8 +73,8 @@ def fps(nx, ny, dx, dy, f):
     
 #%%
 # 
-nx = 64
-ny = 64
+nx = 8
+ny = 8
 x = np.linspace(0.0,2.0*np.pi,nx+1)
 y = np.linspace(0.0,2.0*np.pi,ny+1)
 dx = 2.0*np.pi/(nx)
@@ -101,9 +101,9 @@ u[nx,:] = u[0,:]
 fig, axs = plt.subplots(1,2,sharey=True,figsize=(9,5))
 
 cs = axs[0].contourf(x,y,ue.T, 120, cmap = 'jet', interpolation='bilinear')
-axs[0].text(0.4, -0.1, 'Exact', transform=axs[0].transAxes, fontsize=16, fontweight='bold', va='top')
+axs[0].text(0.4, -0.1, 'Exact', transform=axs[0].transAxes, fontsize=16, va='top')
 cs = axs[1].contourf(x,y,u.T, 120, cmap = 'jet', interpolation='bilinear')
-axs[1].text(0.4, -0.1, 'Numerical', transform=axs[1].transAxes, fontsize=16, fontweight='bold', va='top')
+axs[1].text(0.4, -0.1, 'Numerical', transform=axs[1].transAxes, fontsize=16,  va='top')
 
 fig.tight_layout() 
 
@@ -116,4 +116,4 @@ plt.show()
 fig.savefig("s_fps.eps", bbox_inches = 'tight')
 
 
-
+print(np.linalg.norm(u-ue)/(nx*ny))
