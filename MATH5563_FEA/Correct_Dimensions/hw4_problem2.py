@@ -36,10 +36,10 @@ class pdePr1:
         
         
         # excact solution
-        self.exactu = lambda x: (1.0 + np.e - np.exp(1.0 - x) - np.exp(x))/(1.0 + np.e)
+        self.exactu = lambda x: (np.exp(3.0 - 2.0*x) + 2.0*np.exp(x))/(2.0 + np.e**3)
 
         # right hand side
-        self.f = lambda x : np.ones(np.shape(x))
+        self.f = lambda x : np.zeros(np.shape(x))
         
         # Dirichlet boundary condition
         self.gD = lambda x : self.exactu(x)
@@ -48,26 +48,29 @@ class pdePr1:
         self.gN = lambda x : self.a(x)*self.Du(x)
         
         # Derivative of the exact solution
-        self.Du = lambda x : (np.exp(1.0 - x) - np.exp(x))/(1.0 + np.e)
+        self.Du = lambda x : (-2.0*np.exp(3.0 - 2.0*x) + 2.0*np.exp(x))/(2.0 + np.e**3)
         
         # Diffusion coefficient function
         self.a = lambda x : np.ones(np.shape(x))
         
+        # first order term coefficient
+        self.b = lambda x : -1.0*np.ones(np.shape(x))
+        
         # Reacation coefficient function
-        self.c = lambda x : np.ones(np.shape(x))
+        self.c = lambda x : 2.0*np.ones(np.shape(x))
 
 
 #%% 1 Domain, PDE, BC
 domain = [0,1]
 pde = pdePr1()
-bc = [1,1] # Dirichlet on left and Neumann on Right side
+bc = [1,0] # Dirichlet on left and Neumann on Right side
 
 fig, axs = plt.subplots(1,4,sharex=True,sharey=True,figsize=(12,6))
 
 for i in range(4):    
     #%% 2 Generate Mesh and FEM
     n = int(5*(2**i))
-    pd = 2
+    pd = 1
     ng = 5
     
     mesh = genMesh1D(domain, n)
@@ -78,6 +81,7 @@ for i in range(4):
     
     #%% 4 Generate Matrices abd Vectors
     Mxx = globalMatrix1D(pde.a, mesh, fem, 1, fem, 1, ng)
+    M0x = globalMatrix1D(pde.b, mesh, fem, 0, fem, 1, ng)
     M00 = globalMatrix1D(pde.c, mesh, fem, 0, fem, 0, ng)
     f = globalVec1D(pde.f, mesh, fem, 0, ng)
     
@@ -85,6 +89,7 @@ for i in range(4):
     uD = pde.gD(fem.p)
     uD[fem.dof] = 0.0
     bxx = Mxx @ uD
+    b0x = M0x @ uD
     b00 = M00 @ uD
     
     #%% 6 Neumann boundary condition
@@ -93,8 +98,8 @@ for i in range(4):
     
     #%% 7 Extract degree of freedom
     ii,jj = np.meshgrid(fem.dof,fem.dof,indexing='ij')
-    A = Mxx[ii,jj] + M00[ii,jj]
-    b = f[fem.dof] + bN[fem.dof] -bxx[fem.dof] - b00[fem.dof]
+    A = Mxx[ii,jj] + M0x[ii,jj] + M00[ii,jj]
+    b = f[fem.dof] + bN[fem.dof] - bxx[fem.dof] - b0x[fem.dof] - b00[fem.dof]
     
     #%% 8 Solve Linear Sysetem
     uDof = inv(A) @ b
