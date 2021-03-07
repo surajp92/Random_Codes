@@ -5,7 +5,7 @@ Created on Thu Feb 25 18:19:04 2021
 
 @author: suraj
 """
-
+import nunpy as np
 
 def rhs_cs(nx,ny,dx,dy,re,w,s):
     aa = 1.0/(dx*dx)
@@ -30,3 +30,4 @@ def rhs_cs(nx,ny,dx,dy,re,w,s):
     f[i,j] = -jac + lap/re 
         
     return f
+

@@ -45,9 +45,12 @@ def fps(nx, ny, dx, dy, f):
     
     # create data using the dource term as the real part and 0.0 as the imaginary part
     data[:,:] = np.vectorize(complex)(f[0:nx,0:ny],0.0)
+<<<<<<< HEAD
 #    for i in range(nx):
 #        for j in range(ny):
 #            data[i,j] = complex(f[i,j],0.0)
+=======
+>>>>>>> d015a46e9cfba5576577ce6b92ad4b891a3eecb4
        
     a = pyfftw.empty_aligned((nx,ny),dtype= 'complex128')
     b = pyfftw.empty_aligned((nx,ny),dtype= 'complex128')
@@ -57,6 +60,7 @@ def fps(nx, ny, dx, dy, f):
     
     # compute the fourier transform
     e = fft_object(data)
+<<<<<<< HEAD
 #    e = np.fft.fft2(data)
 #    e = pyfftw.interfaces.scipy_fftpack.fft2(data)
     
@@ -71,13 +75,25 @@ def fps(nx, ny, dx, dy, f):
     # compute the inverse fourier transform
     u = np.real(fft_object_inv(data1))
 #    u = np.fft.ifft2(data1)
+=======
+    e[0,0] = 0.0
+    data1[:,:] = e[:,:]/(aa + bb*kx[:,:] + cc*ky[:,:])
+    
+    # compute the inverse fourier transform
+    u = np.real(fft_object_inv(data1))
+>>>>>>> d015a46e9cfba5576577ce6b92ad4b891a3eecb4
     
     return u    
     
 #%%
 # 
+<<<<<<< HEAD
 nx = 256
 ny = 512
+=======
+nx = 128
+ny = 128
+>>>>>>> d015a46e9cfba5576577ce6b92ad4b891a3eecb4
 
 x_l = 0.0
 x_r = 1.0
