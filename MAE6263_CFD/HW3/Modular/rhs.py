@@ -18,3 +18,6 @@ def rhs(nx,ny,dx,dy,re,w,s,input_data):
     elif isolver == 2:
         r = rhs_cs(nx,ny,dx,dy,re,w,s)
         return r
+    elif isolver == 3:
+        r = rhs_compact_scheme(nx,ny,dx,dy,re,w,s)
+        return r

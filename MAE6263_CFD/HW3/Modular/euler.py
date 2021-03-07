@@ -8,10 +8,15 @@ Created on Thu Feb 25 18:20:57 2021
 from rhs import *
 from poisson import *
 
-def euler(nx,ny,dx,dy,dt,re,w,s,ii,jj,input_data,bc):
+def euler(nx,ny,dx,dy,dt,re,w,s,ii,jj,input_data,bc,bc3):
     r = rhs(nx,ny,dx,dy,re,w,s,input_data)
     w[ii,jj] = w[ii,jj] + dt*r[ii,jj]
-    w = bc(nx,ny,w,s)    
+    
+    if input_data['isolver'] == 3:
+        w = bc3(nx,ny,w,s)
+    else:
+        w = bc(nx,ny,w,s) 
+        
     s = poisson(nx,ny,dx,dy,w,input_data)
     
     return w, s

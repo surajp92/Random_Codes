@@ -7,7 +7,7 @@ Created on Sat Mar  6 18:52:37 2021
 """
 
 import numpy as np
-from thomas_algorithms import *
+from .thomas_algorithms import *
 import matplotlib.pyplot as plt
 
 def c4dd(f,h,nx,ny,isign):

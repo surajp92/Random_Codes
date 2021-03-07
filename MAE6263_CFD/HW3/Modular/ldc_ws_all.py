@@ -37,15 +37,33 @@ mpl.rcParams['text.usetex'] = True
 
 
 #%%
-# set periodic boundary condition for ghost nodes. 
-# Index (0,1) and (n+3,n+4) are the ghost boundary locations
+# second-order bc
 def bc(nx,ny,w,s):
     
     w[:,0] = -(2.0/dy**2)*(s[:,1]) # bottom wall
     w[:,ny] = -(2.0/dy**2)*(s[:,ny-1]) - 2.0/dy # top wall
     
-    w[0,:] = -(2.0/dx**2)*(s[1,:])
-    w[nx,:] = -(2.0/dx**2)*(s[nx-1,:])
+    w[0,:] = -(2.0/dx**2)*(s[1,:]) # left wall
+    w[nx,:] = -(2.0/dx**2)*(s[nx-1,:]) # right wall
+    
+    return w
+
+# B.C. for vorticity (third-order)
+def bc3(nx,ny,w,s):
+    
+    # bottom wall
+    w[:,0] = (1.0/(18*dy**2))*(85.0*s[:,0] - 108.0*s[:,1] + \
+                               27.0*s[:,2] - 4.0*s[:,3]) 
+    # top wall
+    w[:,ny] = (1.0/(18*dy**2))*(85.0*s[:,ny] - 108.0*s[:,ny-1] + \
+                                27.0*s[:,ny-2] - 4.0*s[:,ny-3]) - 11.0/(3.0*dy)
+    
+    # left wall
+    w[0,:] = (1.0/(18*dx**2))*(85.0*s[0,:] - 108.0*s[1,:] + \
+                               27.0*s[2,:] - 4.0*s[3,:]) 
+    # right wall
+    w[nx,:] = (1.0/(18*dx**2))*(85.0*s[nx,:] - 108.0*s[nx-1,:] + \
+                                27.0*s[nx-2,:] - 4.0*s[nx-3,:]) 
     
     return w
 
@@ -78,12 +96,12 @@ v3 = input_data['v3']
 tolerance = float(input_data['tolerance'])
 
 if ip == 1:
-    directory = 'FST'
+    directory = f'FST_{isolver}'
     if not os.path.exists(directory):
         os.makedirs(directory)
 
 elif ip == 2:
-    directory = 'MG'
+    directory = f'MG_{isolver}'
     if not os.path.exists(directory):
         os.makedirs(directory)        
 
@@ -101,14 +119,12 @@ X, Y = np.meshgrid(x, y, indexing='ij')
 
 dtc = np.min((dx,dy))
 dtv = 0.25*re*np.min((dx**2, dy**2))
-sigma = 1.0
+sigma = 0.5
 dt = sigma*np.min((dtc, dtv))
 
 #%%
 w = np.zeros((nx+1,ny+1)) 
 s = np.zeros((nx+1,ny+1))
-t = np.zeros((nx+1,ny+1))
-r = np.zeros((nx+1,ny+1))
 
 w = bc(nx,ny,w,s)
 
@@ -130,9 +146,9 @@ for k in range(nt+1):
     s0 = np.copy(s)
     
     if its == 1:    
-        w,s = euler(nx,ny,dx,dy,dt,re,w,s,ii,jj,input_data,bc)
+        w,s = euler(nx,ny,dx,dy,dt,re,w,s,ii,jj,input_data,bc,bc3)
     elif its == 2:
-        w,s = rk3(nx,ny,dx,dy,dt,re,w,s,t,ii,jj,input_data,bc)
+        w,s = rk3(nx,ny,dx,dy,dt,re,w,s,ii,jj,input_data,bc,bc3)
 
     kc[k] = k
     rw[k] = np.linalg.norm(w - w0)/np.sqrt(np.size(w))
