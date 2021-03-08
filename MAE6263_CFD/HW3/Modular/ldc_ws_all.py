@@ -126,8 +126,6 @@ dt = sigma*np.min((dtc, dtv))
 w = np.zeros((nx+1,ny+1)) 
 s = np.zeros((nx+1,ny+1))
 
-w = bc(nx,ny,w,s)
-
 #%% 
 w0 = np.copy(w)
 s0 = np.copy(s)

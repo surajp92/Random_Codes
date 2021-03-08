@@ -41,15 +41,12 @@ def fst(nx,ny,dx,dy,f):
     
     m = np.linspace(1,nx-1,nx-1).reshape([-1,1])
     n = np.linspace(1,ny-1,ny-1).reshape([1,-1])
-    
+        
     data1 = np.zeros((nx-1,ny-1))
-    
-#    for i in range(1,nx):
-#        for j in range(1,ny):
+
     alpha = (2.0/(dx*dx))*(np.cos(np.pi*m/nx) - 1.0) + (2.0/(dy*dy))*(np.cos(np.pi*n/ny) - 1.0)           
     data1 = data/alpha
     
-#    u = idst(data1, type=2)/((2.0*nx)*(2.0*ny))
     data1 = idst(data1, axis = 1, type = 1)
     data1 = idst(data1, axis = 0, type = 1)
     
@@ -131,7 +128,7 @@ if __name__ == "__main__":
         f = 4.0*c2*np.sin(2.0*np.pi*xm)*np.sin(2.0*np.pi*ym) + \
             c2*np.sin(km*np.pi*xm)*np.sin(km*np.pi*ym)
                  
-        un = fst4(nx,ny,dx,dy,f)    
+        un = fst(nx,ny,dx,dy,f)    
         
         errL2 = np.linalg.norm(un - ue)
         
