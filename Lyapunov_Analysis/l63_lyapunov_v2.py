@@ -148,7 +148,7 @@ for n in range(0,nIterates):
 nTransients = 100
 # The number of iterations to over which to estimate
 #  This is really the number of pull-backs
-nIterates = 1000
+nIterates = 10000
 # The number of iterations per pull-back
 nItsPerPB = 10
 # Initial condition

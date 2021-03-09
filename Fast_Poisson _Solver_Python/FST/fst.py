@@ -18,6 +18,7 @@ import matplotlib.ticker as ticker
 import os
 from numba import jit
 from scipy.fftpack import dst, idst
+from scipy.fftpack import dstn, idstn
 
 from scipy.ndimage import gaussian_filter
 import yaml
@@ -36,8 +37,11 @@ def fst(nx,ny,dx,dy,f):
     data = f[1:-1,1:-1]
         
 #    e = dst(data, type=2)
-    data = dst(data, axis = 1, type = 1)
-    data = dst(data, axis = 0, type = 1)
+#    data = dst(data, axis = 1, type = 1)
+#    data = dst(data, axis = 0, type = 1)
+    
+    data = dstn(data, type = 1)
+#    data = dstn(data, axis = 0, type = 1)
     
     m = np.linspace(1,nx-1,nx-1).reshape([-1,1])
     n = np.linspace(1,ny-1,ny-1).reshape([1,-1])
@@ -50,8 +54,11 @@ def fst(nx,ny,dx,dy,f):
     data1 = data/alpha
     
 #    u = idst(data1, type=2)/((2.0*nx)*(2.0*ny))
-    data1 = idst(data1, axis = 1, type = 1)
-    data1 = idst(data1, axis = 0, type = 1)
+#    data1 = idst(data1, axis = 1, type = 1)
+#    data1 = idst(data1, axis = 0, type = 1)
+    
+    data1 = idstn(data1,  type = 1)
+#    data1 = idstn(data1, axis = 0, type = 1)
     
     u = data1/((2.0*nx)*(2.0*ny))
     
