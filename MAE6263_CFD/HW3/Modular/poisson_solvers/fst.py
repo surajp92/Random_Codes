@@ -128,9 +128,9 @@ if __name__ == "__main__":
         f = 4.0*c2*np.sin(2.0*np.pi*xm)*np.sin(2.0*np.pi*ym) + \
             c2*np.sin(km*np.pi*xm)*np.sin(km*np.pi*ym)
                  
-        un = fst(nx,ny,dx,dy,f)    
+        un = fst4(nx,ny,dx,dy,f)    
         
-        errL2 = np.linalg.norm(un - ue)
+        errL2 = np.linalg.norm(un - ue)/np.sqrt(np.size(ue))
         
         print('#----------------------------------------#')
         print('n = %d' % (nx))

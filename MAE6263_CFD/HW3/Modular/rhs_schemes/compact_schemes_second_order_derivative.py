@@ -58,8 +58,9 @@ if __name__ == "__main__":
     
     print('#-----------------Dxx-------------------#')
     for i in range(3):
-        dx = 0.1/(2**i)
-        nx = int((xr - xl)/dx)
+#        dx = 0.1/(2**i)
+        nx = 32*2**i #int((xr - xl)/dx)
+        dx = (xr - xl)/nx
           
         ny = nx
         
@@ -77,7 +78,7 @@ if __name__ == "__main__":
         
         uddn = c4dd(u,dx,nx,ny,'XX')
         
-        errL2 = np.linalg.norm(uddx - uddn)
+        errL2 = np.linalg.norm(uddx - uddn)/np.sqrt(np.size(uddn))
         
         print('#----------------------------------------#')
         print('n = %d' % (nx))
@@ -90,8 +91,9 @@ if __name__ == "__main__":
     
     print('#-----------------Dyy-------------------#')
     for i in range(5):
-        dx = 0.1/(2**i)
-        nx = int((xr - xl)/dx)
+#        dx = 0.1/(2**i)
+        nx = 64*2**i #int((xr - xl)/dx)
+        dx = (xr - xl)/nx
           
         ny = nx
         
@@ -109,7 +111,7 @@ if __name__ == "__main__":
         
         uddn = c4dd(u,dx,ny,nx,'YY')
         
-        errL2 = np.linalg.norm(uddy - uddn)
+        errL2 = np.linalg.norm(uddy - uddn)/np.sqrt(np.size(uddn))
         
         print('#----------------------------------------#')
         print('n = %d' % (nx))

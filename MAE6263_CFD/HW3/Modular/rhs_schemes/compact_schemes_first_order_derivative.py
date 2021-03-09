@@ -121,10 +121,9 @@ if __name__ == "__main__":
         udx[:,:] = (np.pi)*np.cos(np.pi*X) 
         
         udn = c4d(u,dx,nx,ny,'X')
-        # udn = c4d_b4(u,dx,nx,ny,'X')
+#        udn = c4d_b4(u,dx,nx,ny,'X')
         
-        errL2 = np.linalg.norm(udx - udn) #/np.sqrt(np.size(udn))
-        errL2 = errL2 #/np.sqrt(np.size(udn))
+        errL2 = np.linalg.norm(udx - udn)/np.sqrt(np.size(udn))
         
         error.append(errL2 )
         
@@ -141,8 +140,9 @@ if __name__ == "__main__":
     
     print('#-----------------Dy-------------------#')
     for i in range(3):
-        dx = 0.05/(2**i)
-        nx = int((xr - xl)/dx)
+#        dx = 0.05/(2**i)
+        nx = 32*2**i #int((xr - xl)/dx)
+        dx = (xr - xl)/nx
           
         ny = nx
         
@@ -159,9 +159,9 @@ if __name__ == "__main__":
         udy[:,:] = (2.0*np.pi)*np.cos(2.0*np.pi*Y) 
         
         udn = c4d(u,dx,ny,nx,'Y')
-        # udn = c4d_b4(u,dx,ny,nx,'Y')
+#        udn = c4d_b4(u,dx,ny,nx,'Y')
                 
-        errL2 = np.linalg.norm(udy - udn)
+        errL2 = np.linalg.norm(udy - udn)/np.sqrt(np.size(udn))
         
         print('#----------------------------------------#')
         print('n = %d' % (nx))
