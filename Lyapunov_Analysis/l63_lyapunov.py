@@ -50,11 +50,13 @@ for k in range(nt+1):
     x1, x2, x3 = x[k,0], x[k,1], x[k,2]
     Df = np.array([[-sigma, sigma, 0],[-x3+rho,-1,-x1],[x2,x1,-beta]])
     J = np.eye(3) + Df*dt       
-    w = orth(J @ w)
+    w = J @ w
     
     e1 = e1 + np.log(np.linalg.norm(w[:,0]))
     e2 = e2 + np.log(np.linalg.norm(w[:,1]))
     e3 = e3 + np.log(np.linalg.norm(w[:,2]))
+    
+    w = orth(w)
     
     w[:,0] = w[:,0]/np.linalg.norm(w[:,0])
     w[:,1] = w[:,1]/np.linalg.norm(w[:,1])
