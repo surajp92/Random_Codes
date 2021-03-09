@@ -52,14 +52,59 @@ def c4d(f,h,nx,ny,isign):
         
     return fd
 
+def c4d_b4(f,h,nx,ny,isign):
+    
+    if isign == 'X':
+        u = np.copy(f)
+    if isign == 'Y':
+        u = np.copy(f.T)
+    
+    a = np.zeros((nx+1,ny+1))
+    b = np.zeros((nx+1,ny+1))
+    c = np.zeros((nx+1,ny+1))
+    r = np.zeros((nx+1,ny+1))
+    
+    i = 0
+    a[i,:] = 0.0
+    b[i,:] = 1.0
+    c[i,:] = 3.0
+    r[i,:] = (-17.0*u[i,:] + 9.0*u[i+1,:] + 9.0*u[i+2,:] - u[i+3,:])/(6.0*h)
+    
+    ii = np.arange(1,nx)
+    
+    a[ii,:] = 1.0/4.0
+    b[ii,:] = 1.0
+    c[ii,:] = 1.0/4.0
+    r[ii,:] = 3.0*(u[ii+1,:] - u[ii-1,:])/(4.0*h)
+    
+    i = nx
+    a[i,:] = 3.0
+    b[i,:] = 1.0
+    c[i,:] = 0.0
+    r[i,:] = -1.0*(-17.0*u[i,:] + 9.0*u[i-1,:] + 9.0*u[i-2,:] - u[i-3,:])/(6.0*h)
+    
+    start = 0
+    end = nx
+    ud = tdma(a,b,c,r,start,end)
+    
+    if isign == 'X':
+        fd = np.copy(ud)
+    if isign == 'Y':
+        fd = np.copy(ud.T)
+        
+    return fd
+
 if __name__ == "__main__":
     xl = -1.0
     xr = 1.0
     
+    error = []
+    
     print('#-----------------Dx-------------------#')
     for i in range(3):
-        dx = 0.05/(2**i)
-        nx = int((xr - xl)/dx)
+        # dx = 0.05/(2**i)
+        nx = 32*2**i #int((xr - xl)/dx)
+        dx = (xr - xl)/nx
           
         ny = nx
         
@@ -76,17 +121,23 @@ if __name__ == "__main__":
         udx[:,:] = (np.pi)*np.cos(np.pi*X) 
         
         udn = c4d(u,dx,nx,ny,'X')
+        # udn = c4d_b4(u,dx,nx,ny,'X')
         
-        errL2 = np.linalg.norm(udx - udn)
+        errL2 = np.linalg.norm(udx - udn) #/np.sqrt(np.size(udn))
+        errL2 = errL2 #/np.sqrt(np.size(udn))
+        
+        error.append(errL2 )
         
         print('#----------------------------------------#')
         print('n = %d' % (nx))
         print('L2 error:  %5.3e' % errL2)
         if i>=1:
-            rateL2 = np.log(errL2_0/errL2)/np.log(2.0);
+            rateL2 = np.log((errL2_0)/(errL2))/np.log(2.0);
             print('L2 order:  %5.3f' % rateL2)
         
         errL2_0 = errL2
+        
+    # print(np.log((error[2] - error[1])/(error[1] - error[0]))/np.log(2.0))
     
     print('#-----------------Dy-------------------#')
     for i in range(3):
@@ -108,6 +159,7 @@ if __name__ == "__main__":
         udy[:,:] = (2.0*np.pi)*np.cos(2.0*np.pi*Y) 
         
         udn = c4d(u,dx,ny,nx,'Y')
+        # udn = c4d_b4(u,dx,ny,nx,'Y')
                 
         errL2 = np.linalg.norm(udy - udn)
         

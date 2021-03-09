@@ -34,74 +34,91 @@ def tdma(a,b,c,r,s,e):
 
 
 if __name__ == "__main__":
-    xl = -1.0
-    xr = 1.0
-    dx = 0.025
-    nx = int((xr - xl)/dx)
     
-    dt = 0.0025
-    tmax = 1.0
-    nt = int(tmax/dt)
+    A = np.array([[10,2,0,0],[3,10,4,0],[0,1,7,5],[0,0,3,4]],dtype=float)   
+
+    a = np.array([0.,3.,1,3]) 
+    b = np.array([10.,10.,7.,4.])
+    c = np.array([2.,4.,5.,0])
+    d = np.array([3,4,5,6.])
     
-    ny = nx
+    a = np.reshape(a,[-1,1])
+    b = np.reshape(b,[-1,1])
+    c = np.reshape(c,[-1,1])
+    d = np.reshape(d,[-1,1])
     
-    x = np.linspace(xl,xr,nx+1)
-    xx = (np.ones((ny+1,1))*x).T
+    print(tdma(a, b, c, d, 0, 3) - np.linalg.solve(A, d))
     
-    t = np.linspace(0,tmax,nt+1)
-    u = np.zeros((nt+1,nx+1,ny+1))
-    a = np.zeros((nx+1,ny+1))
-    b = np.zeros((nx+1,ny+1))
-    c = np.zeros((nx+1,ny+1))
-    r = np.zeros((nx+1,ny+1))
+    # print(np.linalg.solve(A, d))
     
-    k = 0
-    u[k,:,:] = -np.sin(np.pi*xx)
+    # xl = -1.0
+    # xr = 1.0
+    # dx = 0.025
+    # nx = int((xr - xl)/dx)
     
-    exact = lambda x,t : -np.exp(-t)*np.sin(np.pi*x)
+    # dt = 0.0025
+    # tmax = 1.0
+    # nt = int(tmax/dt)
     
-    ue = exact(xx,tmax)
+    # ny = nx
     
-    start = 1
-    end = nx-1
+    # x = np.linspace(xl,xr,nx+1)
+    # xx = (np.ones((ny+1,1))*x).T
     
-    i = 0
-    a[i,:],b[i,:],c[i,:],r[i,:] = 0.0, 1.0, 0.0, exact(x[i],0) 
+    # t = np.linspace(0,tmax,nt+1)
+    # u = np.zeros((nt+1,nx+1,ny+1))
+    # a = np.zeros((nx+1,ny+1))
+    # b = np.zeros((nx+1,ny+1))
+    # c = np.zeros((nx+1,ny+1))
+    # r = np.zeros((nx+1,ny+1))
     
-    i = nx
-    a[i,:],b[i,:],c[i,:],r[i,:] = 0.0, 1.0, 0.0, exact(x[i],0) 
+    # k = 0
+    # u[k,:,:] = -np.sin(np.pi*xx)
     
-    alpha = 1.0/(np.pi**2)
+    # exact = lambda x,t : -np.exp(-t)*np.sin(np.pi*x)
     
-    ii = np.arange(1,nx)
+    # ue = exact(xx,tmax)
     
-    a[ii,:] = 12.0/(dx*dx) - 2.0/(alpha*dt)
-    b[ii,:] = -24.0/(dx*dx) - 20.0/(alpha*dt)
-    c[ii,:] = 12.0/(dx*dx) - 2.0/(alpha*dt)
+    # start = 1
+    # end = nx-1
     
-    for k in range(1,nt+1):
-        i = 0
-        r[i,:] = exact(x[i],t[k]) 
+    # i = 0
+    # a[i,:],b[i,:],c[i,:],r[i,:] = 0.0, 1.0, 0.0, exact(x[i],0) 
+    
+    # i = nx
+    # a[i,:],b[i,:],c[i,:],r[i,:] = 0.0, 1.0, 0.0, exact(x[i],0) 
+    
+    # alpha = 1.0/(np.pi**2)
+    
+    # ii = np.arange(1,nx)
+    
+    # a[ii,:] = 12.0/(dx*dx) - 2.0/(alpha*dt)
+    # b[ii,:] = -24.0/(dx*dx) - 20.0/(alpha*dt)
+    # c[ii,:] = 12.0/(dx*dx) - 2.0/(alpha*dt)
+    
+    # for k in range(1,nt+1):
+    #     i = 0
+    #     r[i,:] = exact(x[i],t[k]) 
               
-        r[ii,:] = -(2.0/(alpha*dt))*(u[k-1,ii+1,:] + 10.0*u[k-1,ii,:] + u[k-1,ii-1,:]) - \
-                 (12.0/(dx**2))*(u[k-1,ii+1,:] - 2.0*u[k-1,ii,:] + u[k-1,ii-1,:])
+    #     r[ii,:] = -(2.0/(alpha*dt))*(u[k-1,ii+1,:] + 10.0*u[k-1,ii,:] + u[k-1,ii-1,:]) - \
+    #              (12.0/(dx**2))*(u[k-1,ii+1,:] - 2.0*u[k-1,ii,:] + u[k-1,ii-1,:])
         
-        i = nx
-        r[i,:] = exact(x[i],t[k]) 
+    #     i = nx
+    #     r[i,:] = exact(x[i],t[k]) 
         
-        u[k,:,:] = tdma(a,b,c,r,start,end)
+    #     u[k,:,:] = tdma(a,b,c,r,start,end)
     
-    uerror = u[-1,:,:] - ue
-    l2 = np.linalg.norm(uerror)/np.sqrt(np.size(uerror))
+    # uerror = u[-1,:,:] - ue
+    # l2 = np.linalg.norm(uerror)/np.sqrt(np.size(uerror))
     
-    print(f'L2 norm of the error = {l2}')
+    # print(f'L2 norm of the error = {l2}')
     
-    plt.plot(x,ue)
-    plt.plot(x,u[-1,:],'--')
-    plt.show()
+    # plt.plot(x,ue)
+    # plt.plot(x,u[-1,:],'--')
+    # plt.show()
     
-    plt.plot(x,np.abs((ue-u[-1,:])), 'bo-')
-    plt.show()
+    # plt.plot(x,np.abs((ue-u[-1,:])), 'bo-')
+    # plt.show()
         
         
             
