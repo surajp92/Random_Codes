@@ -49,8 +49,8 @@ plt.show()
 #%%
 d = np.linalg.norm(x1-x2, axis=1)
 
-plt.plot(d,'-')
-plt.plot(np.log(d),'--')
+# plt.plot(d,'-')
+plt.semilogy(d,'--')
 plt.show()
 
 #%%
