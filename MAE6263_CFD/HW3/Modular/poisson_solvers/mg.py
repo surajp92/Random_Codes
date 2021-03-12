@@ -96,30 +96,29 @@ def gauss_seidel_mg(nx, ny, dx, dy, f, un, V):
     omega = 1.0
     unr = np.copy(un)
     
-#    for k in range(V):
-#        for j in range(1,nx):
-#            for i in range(1,ny):
-#                rt[i,j] = f[i,j] - \
-#                (unr[i+1,j] - 2.0*unr[i,j] + unr[i-1,j])/dx**2 - \
-#                (unr[i,j+1] - 2.0*unr[i,j] + unr[i,j-1])/dy**2
-#  
-#                unr[i,j] = unr[i,j] + omega*rt[i,j]/den
-    
-    ii = np.arange(1,nx)
-    jj = np.arange(1,ny)
-    i,j = np.meshgrid(ii,jj,indexing='ij')
-    
     for k in range(V):
-        rt[i,j] = f[i,j] - \
-                  (unr[i+1,j] - 2.0*unr[i,j] + unr[i-1,j])/dx**2 - \
-                  (unr[i,j+1] - 2.0*unr[i,j] + unr[i,j-1])/dy**2
+        for j in range(1,nx):
+            for i in range(1,ny):
+                rt[i,j] = f[i,j] - \
+                (unr[i+1,j] - 2.0*unr[i,j] + unr[i-1,j])/dx**2 - \
+                (unr[i,j+1] - 2.0*unr[i,j] + unr[i,j-1])/dy**2
+  
+                unr[i,j] = unr[i,j] + omega*rt[i,j]/den
+    
+    # ii = np.arange(1,nx)
+    # jj = np.arange(1,ny)
+    # i,j = np.meshgrid(ii,jj,indexing='ij')
+    
+    # for k in range(V):
+    #     rt[i,j] = f[i,j] - \
+    #               (unr[i+1,j] - 2.0*unr[i,j] + unr[i-1,j])/dx**2 - \
+    #               (unr[i,j+1] - 2.0*unr[i,j] + unr[i,j-1])/dy**2
                   
-        unr[i,j] = unr[i,j] + omega*rt[i,j]/den
+    #     unr[i,j] = unr[i,j] + omega*rt[i,j]/den
     
     return unr
 
-# def mg_n_solver(f, dx, dy, nx, ny, v1=2, v2=2, v3=2, max_iterations=20, n_level=5,
-#                 tolerance=1e-4, iprint=False):
+
 def mg_n_solver(f, dx, dy, nx, ny, input_data, iprint=False):
     
     # with open(r'../ldc_parameters.yaml') as file:
@@ -230,23 +229,25 @@ def mg_n_solver(f, dx, dy, nx, ny, input_data, iprint=False):
             u_mg[k-1][:,:] = gauss_seidel_mg(lnx[k-1], lny[k-1], ldx[k-1], ldy[k-1],
                                 f_mg[k-1], u_mg[k-1], v3)
         
-        if iprint:
-            print('Time = ', time.time() - start)   
+        # if iprint:
+        #     print('Time = ', time.time() - start)   
             
     return u_mg[0]
 
 
 #%% 
 if __name__ == "__main__":
+    input_data = {}
+    
+    input_data['nlevel'] = 8
+    input_data['pmax'] = 15
+    input_data['v1'] = 2 
+    input_data['v2'] = 2
+    input_data['v3'] = 2
+    input_data['tolerance'] = 1e-10
+    
     nx = 512
     ny = 512
-    
-    n_level = 8
-    max_iterations = 15
-    v1 = 2
-    v2 = 2
-    v3 = 2
-    tolerance = 1e-6
     
     x_l = 0.0
     x_r = 1.0
@@ -265,21 +266,21 @@ if __name__ == "__main__":
     c1 = (1.0/km)**2
     c2 = -2.0*np.pi**2
     
-    ue = np.sin(2.0*np.pi*xm) * np.sin(2.0*np.pi*ym) + \
-                c1*np.sin(16.0*np.pi*xm) * np.sin(16.0*np.pi*ym)
+    # ue = np.sin(2.0*np.pi*xm) * np.sin(2.0*np.pi*ym) + \
+    #             c1*np.sin(16.0*np.pi*xm) * np.sin(16.0*np.pi*ym)
     
-    f = 4.0*c2*np.sin(2.0*np.pi*xm) * np.sin(2.0*np.pi*ym) + \
-             c2*np.sin(16.0*np.pi*xm) * np.sin(16.0*np.pi*ym)
+    # f = 4.0*c2*np.sin(2.0*np.pi*xm) * np.sin(2.0*np.pi*ym) + \
+    #          c2*np.sin(16.0*np.pi*xm) * np.sin(16.0*np.pi*ym)
                      
-    # ue = np.sin(2.0*np.pi*xm)*np.sin(2.0*np.pi*ym) + \
-    #      c1*np.sin(km*np.pi*xm)*np.sin(km*np.pi*ym)
+    ue = np.sin(2.0*np.pi*xm)*np.sin(2.0*np.pi*ym) + \
+          c1*np.sin(km*np.pi*xm)*np.sin(km*np.pi*ym)
     
-    # f = 4.0*c2*np.sin(2.0*np.pi*xm)*np.sin(2.0*np.pi*ym) + \
-    #     c2*np.sin(km*np.pi*xm)*np.sin(km*np.pi*ym)
+    f = 4.0*c2*np.sin(2.0*np.pi*xm)*np.sin(2.0*np.pi*ym) + \
+        c2*np.sin(km*np.pi*xm)*np.sin(km*np.pi*ym)
              
     
     
-    un = mg_n_solver(f, dx, dy, nx, ny, v1, v2, v3, max_iterations, n_level, tolerance, iprint=True)    
+    un = mg_n_solver(f, dx, dy, nx, ny, input_data, iprint=True)    
     
     fig, axs = plt.subplots(1,2,figsize=(14,5))
     cs = axs[0].contourf(xm, ym, ue, 60,cmap='jet')
