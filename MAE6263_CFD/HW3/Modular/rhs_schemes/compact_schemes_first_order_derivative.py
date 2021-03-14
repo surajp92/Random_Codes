@@ -94,7 +94,7 @@ def c4d_b4(f,h,nx,ny,isign):
         
     return fd
 
-def c6d_b4_p(f,h,nx,ny,isign):
+def c6d_p(f,h,nx,ny,isign):
     
     if isign == 'X':
         u = np.copy(f)
@@ -322,16 +322,16 @@ def c6d_b5_d(f,h,nx,ny,isign):
     start = 0
     end = nx
     
-    A = np.zeros((nx+1,nx+1))
-    for i in range(nx+1):
-        # print(i)
-        A[i,i] = b[i,0]
-        if i > 0:
-            A[i,i-1] = a[i,0]
-        if i < nx-1:
-            A[i,i+1] = c[i,0]
+    # A = np.zeros((nx+1,nx+1))
+    # for i in range(nx+1):
+    #     # print(i)
+    #     A[i,i] = b[i,0]
+    #     if i > 0:
+    #         A[i,i-1] = a[i,0]
+    #     if i < nx-1:
+    #         A[i,i+1] = c[i,0]
     
-    AI = np.linalg.inv(A)   
+    # AI = np.linalg.inv(A)   
     # ud = AI @ r
     
     ud = tdma(a,b,c,r,start,end)
@@ -387,42 +387,42 @@ if __name__ == "__main__":
         
     # print(np.log((error[2] - error[1])/(error[1] - error[0]))/np.log(2.0))
     
-#     print('#-----------------Dy-------------------#')
-#     for i in range(3):
-# #        dx = 0.05/(2**i)
-#         nx = 32*2**i #int((xr - xl)/dx)
-#         dx = (xr - xl)/nx
+    print('#-----------------Dy-------------------#')
+    for i in range(5):
+#        dx = 0.05/(2**i)
+        nx = 16*2**i #int((xr - xl)/dx)
+        dx = (xr - xl)/nx
           
-#         ny = nx
+        ny = nx
         
-#         x = np.linspace(xl,xr,nx+1)
-#         y = np.linspace(xl,xr,ny+1)
-#         X,Y = np.meshgrid(x,y, indexing='ij')
-#         xx = (np.ones((ny+1,1))*x).T
+        x = np.linspace(xl,xr,nx+1)
+        y = np.linspace(xl,xr,ny+1)
+        X,Y = np.meshgrid(x,y, indexing='ij')
+        xx = (np.ones((ny+1,1))*x).T
         
-#         u = np.zeros((nx+1,ny+1))
-#         udy = np.zeros((nx+1,ny+1))
-#         udn = np.zeros((nx+1,ny+1))
+        u = np.zeros((nx+1,ny+1))
+        udy = np.zeros((nx+1,ny+1))
+        udn = np.zeros((nx+1,ny+1))
         
-#         u[:,:] = np.sin(np.pi*X) + np.sin(2.0*np.pi*Y)
-#         udy[:,:] = (2.0*np.pi)*np.cos(2.0*np.pi*Y) 
+        u[:,:] = np.sin(np.pi*X) + np.sin(2.0*np.pi*Y)
+        udy[:,:] = (2.0*np.pi)*np.cos(2.0*np.pi*Y) 
         
-#         udn = c6d_b4(u,dx,ny,nx,'Y')
-# #        udn = c4d_b4(u,dx,ny,nx,'Y')
+        udn = c6d_b5_d(u,dx,ny,nx,'Y')
+#        udn = c4d_b4(u,dx,ny,nx,'Y')
                 
-#         errL2 = np.linalg.norm(udy - udn)/np.sqrt(np.size(udn))
+        errL2 = np.linalg.norm(udy - udn)/np.sqrt(np.size(udn))
         
-#         print('#----------------------------------------#')
-#         print('n = %d' % (nx))
-#         print('L2 error:  %5.3e' % errL2)
-#         if i>=1:
-#             rateL2 = np.log(errL2_0/errL2)/np.log(2.0);
-#             print('L2 order:  %5.3f' % rateL2)
+        print('#----------------------------------------#')
+        print('n = %d' % (nx))
+        print('L2 error:  %5.3e' % errL2)
+        if i>=1:
+            rateL2 = np.log(errL2_0/errL2)/np.log(2.0);
+            print('L2 order:  %5.3f' % rateL2)
         
-#         errL2_0 = errL2
+        errL2_0 = errL2
         
     fig, axs = plt.subplots(1,2,figsize=(14,5))
-    cs = axs[0].contourf(X, Y, udx, 60,cmap='jet')
+    cs = axs[0].contourf(X, Y, udy, 60,cmap='jet')
     #cax = fig.add_axes([1.05, 0.25, 0.05, 0.5])
     fig.colorbar(cs, ax=axs[0], orientation='vertical')
     

@@ -7,7 +7,7 @@ Created on Sat Mar  6 18:52:37 2021
 """
 
 import numpy as np
-from .thomas_algorithms import *
+from thomas_algorithms import *
 import matplotlib.pyplot as plt
 
 def c4dd(f,h,nx,ny,isign):
@@ -33,13 +33,185 @@ def c4dd(f,h,nx,ny,isign):
     a[ii,:] = 1.0/10.0
     b[ii,:] = 1.0
     c[ii,:] = 1.0/10.0
-    r[ii,:] = 6.0*(u[ii-1,:] - 2.0*u[ii,:] + u[ii+1,:])/(5*h*h)
+    r[ii,:] = (6.0/5.0)*(u[ii-1,:] - 2.0*u[ii,:] + u[ii+1,:])/(h*h)
     
     i = nx
     a[i,:] = 11.0
     b[i,:] = 1.0
     c[i,:] = 0.0
     r[i,:] = (13.0*u[i,:] - 27.0*u[i-1,:] + 15.0*u[i-2,:] - u[i-3,:])/(h**2)
+    
+    start = 0
+    end = nx
+    udd = tdma(a,b,c,r,start,end)
+    
+    if isign == 'XX':
+        fdd = np.copy(udd)
+    if isign == 'YY':
+        fdd = np.copy(udd.T)
+    
+    return fdd
+
+def c6dd_p(f,h,nx,ny,isign):
+    
+    if isign == 'XX':
+        u = np.copy(f)
+    if isign == 'YY':
+        u = np.copy(f.T)
+    
+    a = np.zeros((nx,ny+1))
+    b = np.zeros((nx,ny+1))
+    c = np.zeros((nx,ny+1))
+    r = np.zeros((nx,ny+1))
+
+    ii = np.arange(0,nx)
+    up = u[ii,:]
+    a[ii,:] = 2.0/11.0
+    b[ii,:] = 1.0
+    c[ii,:] = 2.0/11.0
+    r[ii,:] = (3.0/11.0)*(up[ii-2,:] - 2.0*up[ii,:] + up[(ii+2)%nx,:])/(4.0*h*h) + \
+              (12.0/11.0)*(up[ii-1,:] - 2.0*up[ii,:] + up[(ii+1)%nx,:])/(h*h)
+    
+    start = 0
+    end = nx
+        
+    alpha = np.zeros((1,ny+1))
+    beta = np.zeros((1,ny+1))
+    
+    alpha[0,:] = 2.0/11.0
+    beta[0,:] = 2.0/11.0
+    
+    x = ctdmsv(a,b,c,alpha,beta,r,0,nx-1,ny)
+    
+    udd = np.zeros((nx+1,ny+1))
+    udd[0:nx,:] = x[0:nx,:]
+    udd[nx,:] = udd[0,:]
+    
+    if isign == 'XX':
+        fdd = np.copy(udd)
+    if isign == 'YY':
+        fdd = np.copy(udd.T)
+        
+    return fdd
+
+def c6dd_b3_d(f,h,nx,ny,isign):
+    
+    if isign == 'XX':
+        u = np.copy(f)
+    if isign == 'YY':
+        u = np.copy(f.T)
+    
+    a = np.zeros((nx+1,ny+1))
+    b = np.zeros((nx+1,ny+1))
+    c = np.zeros((nx+1,ny+1))
+    r = np.zeros((nx+1,ny+1))
+    
+    # 3rd order
+    i = 0
+    a[i,:] = 0.0
+    b[i,:] = 1.0
+    c[i,:] = 11.0
+    r[i,:] = (13.0*u[i,:] - 27.0*u[i+1,:] + 15.0*u[i+2,:] - u[i+3,:])/(h**2)
+    
+    # 4th order
+    i = 1
+    a[i,:] = 1.0/10.0
+    b[i,:] = 1.0
+    c[i,:] = 1.0/10.0
+    r[i,:] = (6.0/5.0)*(u[i-1,:] - 2.0*u[i,:] + u[i+1,:])/(h*h)
+    
+    # 6th order
+    ii = np.arange(2,nx-1)
+    a[ii,:] = 2.0/11.0
+    b[ii,:] = 1.0
+    c[ii,:] = 2.0/11.0
+    r[ii,:] = (3.0/11.0)*(u[ii-2,:] - 2.0*u[ii,:] + u[(ii+2)%nx,:])/(4.0*h*h) + \
+              (12.0/11.0)*(u[ii-1,:] - 2.0*u[ii,:] + u[(ii+1)%nx,:])/(h*h)
+    
+    # 4th order
+    i = nx-1
+    a[i,:] = 1.0/10.0
+    b[i,:] = 1.0
+    c[i,:] = 1.0/10.0
+    r[i,:] = (6.0/5.0)*(u[i-1,:] - 2.0*u[i,:] + u[i+1,:])/(h*h)
+    
+    # 3rd order
+    i = nx
+    a[i,:] = 11.0
+    b[i,:] = 1.0
+    c[i,:] = 0.0
+    r[i,:] = (13.0*u[i,:] - 27.0*u[i-1,:] + 15.0*u[i-2,:] - u[i-3,:])/(h**2)
+    
+    start = 0
+    end = nx
+    udd = tdma(a,b,c,r,start,end)
+    
+    if isign == 'XX':
+        fdd = np.copy(udd)
+    if isign == 'YY':
+        fdd = np.copy(udd.T)
+    
+    return fdd
+
+def c6dd_b5_d(f,h,nx,ny,isign):
+    
+    if isign == 'XX':
+        u = np.copy(f)
+    if isign == 'YY':
+        u = np.copy(f.T)
+    
+    a = np.zeros((nx+1,ny+1))
+    b = np.zeros((nx+1,ny+1))
+    c = np.zeros((nx+1,ny+1))
+    r = np.zeros((nx+1,ny+1))
+    
+    # 5th order
+    i = 0
+    a[i,:] = 0.0
+    b[i,:] = 1.0
+    c[i,:] = 10.0
+    # r[i,:] = (12.525*u[i,:] - 26.0*u[i+1,:] + 14.3*u[i+2,:] - 0.715*u[i+3,:] + \
+    #           0.182*u[i+4,:] + 0.265*u[i+5,:])/(h**2)
+    r[i,:] = ((145.0/12.0)*u[i,:] - (76.0/3.0)*u[i+1,:] + (29.0/2.0)*u[i+2,:] - \
+              (4.0/3.0)*u[i+3,:] + (1.0/12.0)*u[i+4,:])/(h**2)
+    
+    # 5th order
+    i = 1
+    a[i,:] = 0.0
+    b[i,:] = 1.0
+    c[i,:] = 10.0
+    # r[i,:] = (12.525*u[i,:] - 26.0*u[i+1,:] + 14.3*u[i+2,:] - 0.715*u[i+3,:] + \
+    #           0.182*u[i+4,:] + 0.265*u[i+5,:])/(h**2)
+    r[i,:] = ((145.0/12.0)*u[i,:] - (76.0/3.0)*u[i+1,:] + (29.0/2.0)*u[i+2,:] - \
+              (4.0/3.0)*u[i+3,:] + (1.0/12.0)*u[i+4,:])/(h**2)
+    
+    # 6th order
+    ii = np.arange(2,nx-1)
+    a[ii,:] = 2.0/11.0
+    b[ii,:] = 1.0
+    c[ii,:] = 2.0/11.0
+    r[ii,:] = (3.0/11.0)*(u[ii-2,:] - 2.0*u[ii,:] + u[(ii+2)%nx,:])/(4.0*h*h) + \
+              (12.0/11.0)*(u[ii-1,:] - 2.0*u[ii,:] + u[(ii+1)%nx,:])/(h*h)
+    
+    # 5th order
+    i = nx-1
+    a[i,:] = 10.0
+    b[i,:] = 1.0
+    c[i,:] = 0.0
+    # r[i,:] = (12.525*u[i,:] - 26.0*u[i-1,:] + 14.3*u[i-2,:] - 0.715*u[i-3,:] + \
+    #           0.182*u[i-4,:] + 0.265*u[i-5,:])/(h**2)
+    r[i,:] = ((145.0/12.0)*u[i,:] - (76.0/3.0)*u[i-1,:] + (29.0/2.0)*u[i-2,:] - \
+              (4.0/3.0)*u[i-3,:] + (1.0/12.0)*u[i-4,:])/(h**2)
+    
+    # 5th order
+    i = nx
+    a[i,:] = 10.0
+    b[i,:] = 1.0
+    c[i,:] = 0.0
+    # r[i,:] = (12.525*u[i,:] - 26.0*u[i-1,:] + 14.3*u[i-2,:] - 0.715*u[i-3,:] + \
+    #           0.182*u[i-4,:] + 0.265*u[i-5,:])/(h**2)
+    r[i,:] = ((145.0/12.0)*u[i,:] - (76.0/3.0)*u[i-1,:] + (29.0/2.0)*u[i-2,:] - \
+              (4.0/3.0)*u[i-3,:] + (1.0/12.0)*u[i-4,:])/(h**2)
     
     start = 0
     end = nx
@@ -76,7 +248,7 @@ if __name__ == "__main__":
         u[:,:] = np.sin(np.pi*X) + np.sin(2.0*np.pi*Y)
         uddx[:,:] = -(np.pi**2)*np.sin(np.pi*X) 
         
-        uddn = c4dd(u,dx,nx,ny,'XX')
+        uddn = c6dd_b5_d(u,dx,nx,ny,'XX')
         
         errL2 = np.linalg.norm(uddx - uddn)/np.sqrt(np.size(uddn))
         
@@ -90,9 +262,9 @@ if __name__ == "__main__":
         errL2_0 = errL2
     
     print('#-----------------Dyy-------------------#')
-    for i in range(5):
+    for i in range(3):
 #        dx = 0.1/(2**i)
-        nx = 64*2**i #int((xr - xl)/dx)
+        nx = 32*2**i #int((xr - xl)/dx)
         dx = (xr - xl)/nx
           
         ny = nx
@@ -109,7 +281,7 @@ if __name__ == "__main__":
         u[:,:] = np.sin(np.pi*X) + np.sin(2.0*np.pi*Y)
         uddy[:,:] = -(4.0*np.pi**2)*np.sin(2.0*np.pi*Y) 
         
-        uddn = c4dd(u,dx,ny,nx,'YY')
+        uddn = c6dd_b5_d(u,dx,ny,nx,'YY')
         
         errL2 = np.linalg.norm(uddy - uddn)/np.sqrt(np.size(uddn))
         
