@@ -57,6 +57,52 @@ def c4dd(f,dx,dy,nx,ny,isign):
     
     return fdd
 
+def c4dd_p(f,dx,dy,nx,ny,isign):
+    
+    if isign == 'XX':
+        u = np.copy(f)
+        h = dx
+    if isign == 'YY':
+        u = np.copy(f.T)
+        h = dy
+        temp = nx
+        nx = ny
+        ny = temp
+    
+    a = np.zeros((nx,ny+1))
+    b = np.zeros((nx,ny+1))
+    c = np.zeros((nx,ny+1))
+    r = np.zeros((nx,ny+1))
+
+    ii = np.arange(0,nx)
+    up = u[ii,:]
+    a[ii,:] = 1.0/10.0
+    b[ii,:] = 1.0
+    c[ii,:] = 1.0/10.0
+    r[ii,:] = (6.0/5.0)*(up[ii-1,:] - 2.0*up[ii,:] + up[(ii+1)%nx,:])/(h*h)
+    
+    start = 0
+    end = nx
+        
+    alpha = np.zeros((1,ny+1))
+    beta = np.zeros((1,ny+1))
+    
+    alpha[0,:] = 1.0/10.0
+    beta[0,:] = 1.0/10.0
+    
+    x = ctdmsv(a,b,c,alpha,beta,r,0,nx-1,ny)
+    
+    udd = np.zeros((nx+1,ny+1))
+    udd[0:nx,:] = x[0:nx,:]
+    udd[nx,:] = udd[0,:]
+    
+    if isign == 'XX':
+        fdd = np.copy(udd)
+    if isign == 'YY':
+        fdd = np.copy(udd.T)
+        
+    return fdd
+
 def c6dd_p(f,dx,dy,nx,ny,isign):
     
     if isign == 'XX':
@@ -140,8 +186,8 @@ def c6dd_b3_d(f,dx,dy,nx,ny,isign):
     a[ii,:] = 2.0/11.0
     b[ii,:] = 1.0
     c[ii,:] = 2.0/11.0
-    r[ii,:] = (3.0/11.0)*(u[ii-2,:] - 2.0*u[ii,:] + u[(ii+2)%nx,:])/(4.0*h*h) + \
-              (12.0/11.0)*(u[ii-1,:] - 2.0*u[ii,:] + u[(ii+1)%nx,:])/(h*h)
+    r[ii,:] = (3.0/11.0)*(u[ii-2,:] - 2.0*u[ii,:] + u[(ii+2),:])/(4.0*h*h) + \
+              (12.0/11.0)*(u[ii-1,:] - 2.0*u[ii,:] + u[(ii+1),:])/(h*h)
     
     # 4th order
     i = nx-1
@@ -210,8 +256,8 @@ def c6dd_b5_d(f,dx,dy,nx,ny,isign):
     a[ii,:] = 2.0/11.0
     b[ii,:] = 1.0
     c[ii,:] = 2.0/11.0
-    r[ii,:] = (3.0/11.0)*(u[ii-2,:] - 2.0*u[ii,:] + u[(ii+2)%nx,:])/(4.0*h*h) + \
-              (12.0/11.0)*(u[ii-1,:] - 2.0*u[ii,:] + u[(ii+1)%nx,:])/(h*h)
+    r[ii,:] = (3.0/11.0)*(u[ii-2,:] - 2.0*u[ii,:] + u[(ii+2),:])/(4.0*h*h) + \
+              (12.0/11.0)*(u[ii-1,:] - 2.0*u[ii,:] + u[(ii+1),:])/(h*h)
     
     # 5th order
     i = nx-1

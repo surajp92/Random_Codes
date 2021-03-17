@@ -85,8 +85,8 @@ def rhs_arakawa(nx,ny,dx,dy,re,pr,w,s,th):
         
     lap = aa*(wp[(i+1)%nx,j] - 2.0*wp[i,j] + wp[i-1,j]) + bb*(wp[i,j+1] - 2.0*wp[i,j] + wp[i,j-1])
     
-    # source = (thp[(i+1)%nx,j] - thp[i-1,j])/(2.0*dx)
-    source = (thp[i,j+1] - thp[i,j-1])/(2.0*dy)
+    source = (thp[(i+1)%nx,j] - thp[i-1,j])/(2.0*dx)
+#    source = (thp[i,j+1] - thp[i,j-1])/(2.0*dy)
                                 
     fw[i,j] = -jac + lap/re + source
     

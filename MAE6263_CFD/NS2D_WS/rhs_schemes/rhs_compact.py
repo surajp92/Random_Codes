@@ -45,7 +45,7 @@ def rhs_compact_scheme(nx,ny,dx,dy,re,pr,w,s,th):
     fth = np.zeros((nx+1,ny+1))
     
     jac = sy*wx - sx*wy
-    fw[:,:] = -jac + (wxx + wyy)/re + thy
+    fw[:,:] = -jac + (wxx + wyy)/re + thx
     
     jac = sy*thx - sx*thy
     fth[:,:] = -jac + (thxx + thyy)/(re*pr) 

@@ -57,6 +57,52 @@ def c4d(f,dx,dy,nx,ny,isign):
         
     return fd
 
+def c4d_p(f,dx,dy,nx,ny,isign):
+    
+    if isign == 'X':
+        u = np.copy(f)
+        h = dx
+    if isign == 'Y':
+        u = np.copy(f.T)
+        h = dy
+        temp = nx
+        nx = ny
+        ny = temp
+    
+    a = np.zeros((nx,ny+1))
+    b = np.zeros((nx,ny+1))
+    c = np.zeros((nx,ny+1))
+    r = np.zeros((nx,ny+1))
+
+    ii = np.arange(0,nx)
+    up = u[ii,:]
+    a[ii,:] = 1.0/4.0
+    b[ii,:] = 1.0
+    c[ii,:] = 1.0/4.0
+    r[ii,:] = 3.0*(up[(ii+1)%nx,:] - up[ii-1,:])/(4.0*h)
+    
+    start = 0
+    end = nx
+        
+    alpha = np.zeros((1,ny+1))
+    beta = np.zeros((1,ny+1))
+    
+    alpha[0,:] = 1.0/4.0
+    beta[0,:] = 1.0/4.0
+    
+    x = ctdmsv(a,b,c,alpha,beta,r,0,nx-1,ny)
+    
+    ud = np.zeros((nx+1,ny+1))
+    ud[0:nx,:] = x[0:nx,:]
+    ud[nx,:] = ud[0,:]
+
+    if isign == 'X':
+        fd = np.copy(ud)
+    if isign == 'Y':
+        fd = np.copy(ud.T)
+        
+    return fd
+
 def c4d_b4(f,dx,dy,nx,ny,isign):
     
     if isign == 'X':
@@ -210,91 +256,6 @@ def c6d_b3_d(f,dx,dy,nx,ny,isign):
         
     return fd
 
-def c6d_b4_d(f,dx,dy,nx,ny,isign):
-    
-    if isign == 'X':
-        u = np.copy(f)
-        h = dx
-    if isign == 'Y':
-        u = np.copy(f.T)
-        h = dy
-        temp = nx
-        nx = ny
-        ny = temp
-    
-    a = np.zeros((nx+1,ny+1))
-    b = np.zeros((nx+1,ny+1))
-    c = np.zeros((nx+1,ny+1))
-    r = np.zeros((nx+1,ny+1))
-    
-    # 4th order
-    i = 0
-    a[i,:] = 0.0
-    b[i,:] = 1.0
-    c[i,:] = 3.0
-    r[i,:] = (-17.0*u[i,:] + 9.0*u[i+1,:] + 9.0*u[i+2,:] - u[i+3,:])/(6.0*h)
-
-    # 3rd order
-    i = 1
-    # a[i,:] = 1.0/4.0
-    # b[i,:] = 1.0
-    # c[i,:] = 1.0/4.0
-    # r[i,:] = 3.0*(-u[i-1,:] + u[i+1,:])/(4.0*h)
-    a[i,:] = 0.0
-    b[i,:] = 1.0
-    c[i,:] = 2.0
-    r[i,:] = (-5.0*u[i,:] + 4.0*u[i+1,:] + u[i+2,:])/(2.0*h)
-       
-    # 6th order
-    ii = np.arange(2,nx-1)
-    a[ii,:] = 1.0/3.0
-    b[ii,:] = 1.0
-    c[ii,:] = 1.0/3.0
-    r[ii,:] = (1.0/9.0)*(u[(ii+2),:] - u[ii-2,:])/(4.0*h) + (14.0/9.0)*(u[(ii+1),:] - u[ii-1,:])/(2.0*h)
-
-    
-    # 3rd order    
-    i = nx-1
-    # a[i,:] = 1.0/4.0
-    # b[i,:] = 1.0
-    # c[i,:] = 1.0/4.0
-    # r[i,:] = -1.0*3.0*(-u[i-1,:] + u[i+1,:])/(4.0*h)
-    a[i,:] = 2.0
-    b[i,:] = 1.0
-    c[i,:] = 0.0
-    r[i,:] = -1.0*(-5.0*u[i,:] + 4.0*u[i-1,:] + u[i-2,:])/(2.0*h)
-    
-    # 4th order    
-    i = nx
-    a[i,:] = 3.0
-    b[i,:] = 1.0
-    c[i,:] = 0.0
-    r[i,:] = -1.0*(-17.0*u[i,:] + 9.0*u[i-1,:] + 9.0*u[i-2,:] - u[i-3,:])/(6.0*h)
-
-    
-    start = 0
-    end = nx
-    
-    A = np.zeros((nx+1,nx+1))
-    for i in range(nx+1):
-        # print(i)
-        A[i,i] = b[i,0]
-        if i > 0:
-            A[i,i-1] = a[i,0]
-        if i < nx-1:
-            A[i,i+1] = c[i,0]
-    
-    AI = np.linalg.inv(A)   
-    # ud = AI @ r
-    
-    ud = tdma(a,b,c,r,start,end)
-    
-    if isign == 'X':
-        fd = np.copy(ud)
-    if isign == 'Y':
-        fd = np.copy(ud.T)
-        
-    return fd
 
 def c6d_b5_d(f,dx,dy,nx,ny,isign):
     
