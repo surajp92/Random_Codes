@@ -13,40 +13,43 @@ from .compact_schemes_first_order_derivative import *
 from .compact_schemes_second_order_derivative import *
 from .rhs_conservative import *
 
-def rhs_compact_scheme(nx,ny,dx,dy,re,w,s):
+def rhs_compact_scheme(nx,ny,dx,dy,re,pr,w,s,th):
     
     # viscous terms for vorticity transport equation
-    # wxx
+    
     uw = np.copy(w)
     us = np.copy(s)
-
-    wxx = c4dd(uw,dx,dy,nx,ny,'XX')
+    uth = np.copy(th)
         
-    # wyy
-    wyy = c4dd(uw,dx,dy,nx,ny,'YY')
+    # convective terms streamfunciton
+    sx = c6d_p(us,dx,dy,nx,ny,'X') # sx    
+    sy = c6d_b5_d(us,dx,dy,nx,ny,'Y') # sy    
     
-    lap = wxx + wyy
+    # convective terms vorticity
+    wx = c6d_p(uw,dx,dy,nx,ny,'X') # wx
+    wy = c6d_b5_d(uw,dx,dy,nx,ny,'Y') # wy
     
-    # convective terms
+    # convective terms temperature
+    thx = c6d_p(uth,dx,dy,nx,ny,'X') # wx
+    thy = c6d_b5_d(uth,dx,dy,nx,ny,'Y') # wy
     
-    # sx
-    sx = c4d(us,dx,dy,nx,ny,'X')
+    # dissipative terms vorticity    
+    wxx = c6dd_p(uw,dx,dy,nx,ny,'XX') # wxx
+    wyy = c6dd_b5_d(uw,dx,dy,nx,ny,'YY') # wyy
     
-    # sy
-    sy = c4d(us,dx,dy,nx,ny,'Y')
-
-    # wx
-    wx = c4d(uw,dx,dy,nx,ny,'X')
+    # dissipative terms temperature    
+    thxx = c6dd_p(uth,dx,dy,nx,ny,'XX') # theta_xx
+    thyy = c6dd_b5_d(uth,dx,dy,nx,ny,'YY') # theta_yy
     
-    # wy
-    wy = c4d(uw,dx,dy,nx,ny,'Y')
+    fw = np.zeros((nx+1,ny+1))
+    fth = np.zeros((nx+1,ny+1))
     
     jac = sy*wx - sx*wy
+    fw[:,:] = -jac + (wxx + wyy)/re + thy
     
-    f = np.zeros((nx+1,ny+1))
+    jac = sy*thx - sx*thy
+    fth[:,:] = -jac + (thxx + thyy)/(re*pr) 
     
-    f[:,:] = -jac + lap/re
-    
-    return f
+    return fw, fth
     
     

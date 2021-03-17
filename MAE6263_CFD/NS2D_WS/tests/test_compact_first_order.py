@@ -44,7 +44,7 @@ if __name__ == "__main__":
         u[:,:] = np.sin(np.pi*X) + np.sin(2.0*np.pi*Y)
         udx[:,:] = (np.pi)*np.cos(np.pi*X) 
         
-        udn = c6d_b5_d(u,dx,dy,nx,ny,'X')
+        udn = c6d_p(u,dx,dy,nx,ny,'X')
 #        udn = c4d_b4(u,dx,nx,ny,'X')
         
         errL2 = np.linalg.norm(udx - udn)/np.sqrt(np.size(udn))
@@ -66,7 +66,7 @@ if __name__ == "__main__":
         nx = 16*2**i #int((xr - xl)/dx)
         dx = (xr - xl)/nx
           
-        ny = int(0.5*nx)
+        ny = int(1*nx)
         dy = (xr - xl)/ny
         
         x = np.linspace(xl,xr,nx+1)
@@ -81,7 +81,7 @@ if __name__ == "__main__":
         u[:,:] = np.sin(np.pi*X) + np.sin(2.0*np.pi*Y)
         udy[:,:] = (2.0*np.pi)*np.cos(2.0*np.pi*Y) 
         
-        udn = c6d_b5_d(u,dx,dy,nx,ny,'Y')
+        udn = c6d_p(u,dx,dy,nx,ny,'Y')
 #        udn = c4d_b4(u,dx,ny,nx,'Y')
                 
         errL2 = np.linalg.norm(udy - udn)/np.sqrt(np.size(udn))
