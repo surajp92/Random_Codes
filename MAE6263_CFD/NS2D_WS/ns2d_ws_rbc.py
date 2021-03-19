@@ -131,7 +131,7 @@ w = np.zeros((nx+1,ny+1))
 s = np.zeros((nx+1,ny+1))
 th = np.zeros((nx+1,ny+1))
 
-w[1:-1,1:-1] = np.random.randn(nx-1,ny-1)
+w = 1.0e-3*np.sin(np.pi*X)*np.sin(np.pi*Y) #np.random.randn(nx-1,ny-1)
 
 th = 1.0 - Y
 th[:,0] = wh
@@ -167,8 +167,8 @@ for k in range(nt+1):
     if k % freq == 0:
         print('%0.3i %0.3e %0.3e %0.3e' % (kc[k], rw[k], rs[k], rth[k]))
 
-     if rw[k] <= eps and rs[k] <= eps and rth[k] <= eps:
-         break
+    if rw[k] <= eps and rs[k] <= eps and rth[k] <= eps:
+        break
 
 kc = kc[:k+1]
 rw = rw[:k+1]
@@ -192,26 +192,26 @@ cs = axs[0].contour(X,Y,w,40,vmin=-4.5, vmax=4.5,colors='black')
 cs = axs[0].imshow(w.T,extent=[0, 2, 0, 1], origin='lower',
         interpolation='bicubic',cmap='RdBu', alpha=1.0)
 #cax = fig.add_axes([1.05, 0.25, 0.05, 0.5])
-fig.colorbar(cs, ax=axs[0], shrink=0.9, orientation='vertical')
+fig.colorbar(cs, ax=axs[0], shrink=0.8, orientation='vertical')
 axs[0].set_aspect('equal')
 
 cs = axs[1].contour(X,Y,s,40,vmin=-0.12, vmax=0.12,colors='black')
 cs = axs[1].imshow(s.T,extent=[0, 2, 0, 1], origin='lower',
         interpolation='bicubic',cmap='RdBu', alpha=1.0)
 #cax = fig.add_axes([1.05, 0.25, 0.05, 0.5])
-fig.colorbar(cs, ax=axs[1], shrink=0.9, orientation='vertical')
+fig.colorbar(cs, ax=axs[1], shrink=0.8, orientation='vertical')
 axs[1].set_aspect('equal')
 
 cs = axs[2].contour(X,Y,th,40,vmin=-0, vmax=1,colors='black')
 cs = axs[2].imshow(th.T,extent=[0, 2, 0, 1], origin='lower',
         interpolation='bicubic',cmap='RdBu', alpha=1.0)
 #cax = fig.add_axes([1.05, 0.25, 0.05, 0.5])
-fig.colorbar(cs, ax=axs[2], shrink=0.9, orientation='vertical')
+fig.colorbar(cs, ax=axs[2], shrink=0.8, orientation='vertical')
 axs[2].set_aspect('equal')
 
 plt.show()
 fig.tight_layout()
-fig.savefig('rbc_ws.png', bbox_inches = 'tight', pad_inches = 0, dpi = 300)
+fig.savefig(f'rbc_ws_{its}_{isolver}.png', bbox_inches = 'tight', pad_inches = 0.1, dpi = 200)
 
 #%%
 u = np.zeros((nx+1,ny+1))

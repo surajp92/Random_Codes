@@ -102,6 +102,8 @@ if __name__ == "__main__":
     
     print(tdma(a, b, c, d, 0, 3) - np.linalg.solve(A, d))
     
+    print(tdmsv(a,b,c,d,0,3,1) - np.linalg.solve(A, d))
+    
     print('4 X 4 matrix, s = 0, e = 4')
     A = np.array([[1,0,0,0,0],[3,10,4,0,0],[0,1,7,5,0],[0,0,2,8,9],[0,0,0,0,1]],dtype=float)   
 
