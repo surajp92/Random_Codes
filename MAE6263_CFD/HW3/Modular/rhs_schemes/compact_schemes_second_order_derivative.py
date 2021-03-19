@@ -7,7 +7,7 @@ Created on Sat Mar  6 18:52:37 2021
 """
 
 import numpy as np
-from thomas_algorithms import *
+from .thomas_algorithms import *
 import matplotlib.pyplot as plt
 
 def c4dd(f,h,nx,ny,isign):
@@ -190,8 +190,8 @@ def c6dd_b5_d(f,h,nx,ny,isign):
     a[ii,:] = 2.0/11.0
     b[ii,:] = 1.0
     c[ii,:] = 2.0/11.0
-    r[ii,:] = (3.0/11.0)*(u[ii-2,:] - 2.0*u[ii,:] + u[(ii+2)%nx,:])/(4.0*h*h) + \
-              (12.0/11.0)*(u[ii-1,:] - 2.0*u[ii,:] + u[(ii+1)%nx,:])/(h*h)
+    r[ii,:] = (3.0/11.0)*(u[ii-2,:] - 2.0*u[ii,:] + u[(ii+2),:])/(4.0*h*h) + \
+              (12.0/11.0)*(u[ii-1,:] - 2.0*u[ii,:] + u[(ii+1),:])/(h*h)
     
     # 5th order
     i = nx-1
@@ -248,7 +248,7 @@ if __name__ == "__main__":
         u[:,:] = np.sin(np.pi*X) + np.sin(2.0*np.pi*Y)
         uddx[:,:] = -(np.pi**2)*np.sin(np.pi*X) 
         
-        uddn = c6dd_b5_d(u,dx,nx,ny,'XX')
+        uddn = c6dd_b3_d(u,dx,nx,ny,'XX')
         
         errL2 = np.linalg.norm(uddx - uddn)/np.sqrt(np.size(uddn))
         
@@ -281,7 +281,7 @@ if __name__ == "__main__":
         u[:,:] = np.sin(np.pi*X) + np.sin(2.0*np.pi*Y)
         uddy[:,:] = -(4.0*np.pi**2)*np.sin(2.0*np.pi*Y) 
         
-        uddn = c6dd_b5_d(u,dx,ny,nx,'YY')
+        uddn = c6dd_b3_d(u,dx,ny,nx,'YY')
         
         errL2 = np.linalg.norm(uddy - uddn)/np.sqrt(np.size(uddn))
         

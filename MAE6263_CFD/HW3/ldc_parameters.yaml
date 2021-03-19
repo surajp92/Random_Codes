@@ -1,7 +1,7 @@
 # parameters of the lid driven cavity problem
 
-nx : 200     # NXF
-ny : 200     # NYF
+nx : 50     # NXF
+ny : 50     # NYF
 re : 100.0  # Re, Reynolds number 
 nt : 10000  # NT, number of time step
 lx : 1.0    # length of the domain in x-direction

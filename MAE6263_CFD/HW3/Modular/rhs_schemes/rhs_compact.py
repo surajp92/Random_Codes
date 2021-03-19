@@ -20,26 +20,26 @@ def rhs_compact_scheme(nx,ny,dx,dy,re,w,s):
     uw = np.copy(w)
     us = np.copy(s)
 
-    wxx = c4dd(uw,dx,nx,ny,'XX')
+    wxx = c6dd_b5_d(uw,dx,nx,ny,'XX')
         
     # wyy
-    wyy = c4dd(uw,dy,ny,nx,'YY')
+    wyy = c6dd_b5_d(uw,dy,ny,nx,'YY')
     
     lap = wxx + wyy
     
     # convective terms
     
     # sx
-    sx = c4d(us,dx,nx,ny,'X')
+    sx = c6d_b5_d(us,dx,nx,ny,'X')
     
     # sy
-    sy = c4d(us,dx,nx,ny,'Y')
+    sy = c6d_b5_d(us,dy,ny,nx,'Y')
 
     # wx
-    wx = c4d(uw,dx,nx,ny,'X')
+    wx = c6d_b5_d(uw,dx,nx,ny,'X')
     
     # wy
-    wy = c4d(uw,dx,nx,ny,'Y')
+    wy = c6d_b5_d(uw,dy,ny,nx,'Y')
     
     jac = sy*wx - sx*wy
     

@@ -53,7 +53,7 @@ def rk3(nx,ny,dx,dy,dt,re,pr,w,s,th,input_data,bc,bc3):
     tw[nx,:] = tw[0,:]
     tth[nx,:] = tth[0,:]
     
-    s[:,:] = poisson(nx,ny,dx,dy,tw,input_data)
+    s = poisson(nx,ny,dx,dy,tw,input_data)
 
     #stage-3
     if isolver == 3:
@@ -67,6 +67,6 @@ def rk3(nx,ny,dx,dy,dt,re,pr,w,s,th,input_data,bc,bc3):
     w[nx,:] = w[0,:]
     th[nx,:] = th[0,:]
     
-    s[:,:] = poisson(nx,ny,dx,dy,w,input_data)
+    s = poisson(nx,ny,dx,dy,w,input_data)
     
     return w, s, th
