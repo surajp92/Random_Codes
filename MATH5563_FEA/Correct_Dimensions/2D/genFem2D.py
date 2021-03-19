@@ -74,3 +74,12 @@ for list_ in comb_list:
     start = end
 
 print(fem_p)
+
+#%%
+aa = [mesh_t[:,comb_list[0]], mesh_t[:,comb_list[1]], mesh_t[:,comb_list[2]]]
+aa = np.array(aa)
+aa = np.reshape(aa, [24,2])
+
+#%%
+aa = np.sort(aa, axis=1)
+aau, indices = np.unique(aa, axis=0, return_index=True)
