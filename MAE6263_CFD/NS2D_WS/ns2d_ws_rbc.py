@@ -196,7 +196,7 @@ for k in range(1,nt+1):
     if current_time > t_movie:
         filename = os.path.join(directory, f'ws_{km}_{nx}_{ny}_{ra}_{its}_{isolver}_{icompact}.npz')
         np.savez(filename,
-                 w = w, s = s) 
+                 w = w, s = s,th=th) 
         t_movie = t_movie + dt_movie
         km = km + 1
     
