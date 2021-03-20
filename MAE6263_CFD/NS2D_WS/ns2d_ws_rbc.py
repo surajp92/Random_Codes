@@ -26,6 +26,7 @@ from poisson import *
 from rhs import *
 from euler import *
 from rk3 import *
+from utils import *
 
 font = {'family' : 'Times New Roman',
         'size'   : 14}    
@@ -85,22 +86,29 @@ ly = input_data['ly']
 wc = input_data['wc']
 wh = input_data['wh']
 isolver = input_data['isolver']
+icompact = input_data['icompact']
 ip = input_data['ip']
 its = input_data['its']
 eps = float(input_data['eps'])
 freq = input_data['freq']
+nsmovie = input_data['nsmovie']
 nlevel = input_data['nlevel']
 pmax = input_data['pmax']
 v1 = input_data['v1']
 v2 = input_data['v2']
 v3 = input_data['v3']
 tolerance = float(input_data['tolerance'])
-
+cfl = input_data['cfl']
+sigma = input_data['sigma']
 
 re = np.sqrt(ra/pr)
 
 if ip == 1:
     directory = f'RBC_FST_{isolver}'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    
+    directory = os.path.join(directory, f'solution_{nx}_{ny}_{ra}_{its}_{isolver}_{icompact}')
     if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -123,7 +131,6 @@ X, Y = np.meshgrid(x, y, indexing='ij')
 
 dtc = np.min((dx,dy))
 dtv = 0.25*re*np.min((dx**2, dy**2))
-sigma = 0.5
 dt = sigma*np.min((dtc, dtv))
 
 #%%
@@ -142,14 +149,21 @@ w0 = np.copy(w)
 s0 = np.copy(s)
 th0 = np.copy(th)
 
-kc = np.zeros(nt+1)
-rw = np.zeros(nt+1)
-rs = np.zeros(nt+1)
-rth = np.zeros(nt+1)
+kc, rw, rs, rth, time = [np.zeros(nt+1) for i in range(5)]
+ene, ens, dis, NuH, NuC, NuMean = [np.zeros(nt+1) for i in range(6)]
+tprobe = np.zeros((nt+1,5))
+
+tave = 0.0
+tmax = 100.0
+
+dt_movie = (tmax - tave)/nsmovie
+t_movie = tave
+current_time = 0.0
+km = 0
    
 clock_time_init = tm.time()
 
-for k in range(nt+1):
+for k in range(1,nt+1):
     w0 = np.copy(w)
     s0 = np.copy(s)
     th0 = np.copy(th)
@@ -158,85 +172,76 @@ for k in range(nt+1):
         w,s,th = euler(nx,ny,dx,dy,dt,re,pr,w,s,th,input_data,bc,bc3)
     elif its == 2:
         w,s,th = rk3(nx,ny,dx,dy,dt,re,pr,w,s,th,input_data,bc,bc3)
-
+        
     kc[k] = k
     rw[k] = np.linalg.norm(w - w0)/np.sqrt(np.size(w))
     rs[k] = np.linalg.norm(s - s0)/np.sqrt(np.size(s))
     rth[k] = np.linalg.norm(th - th0)/np.sqrt(np.size(th))
-#    
+    time[k] = time[k-1] + dt
+    
+    current_time = current_time + dt
+    
+    dt, ene[k], ens[k], dis[k], NuH[k], NuC[k], NuMean[k], tprobe[k,:] = \
+    compute_history(nx,ny,dx,dy,x,y,re,pr,s,w,th,input_data)
+    
     if k % freq == 0:
-        print('%0.3i %0.3e %0.3e %0.3e' % (kc[k], rw[k], rs[k], rth[k]))
+        print('%0.5i %0.3e %0.3e %0.3e %0.3e' % (kc[k], time[k], rw[k], rs[k], rth[k]))
 
     if rw[k] <= eps and rs[k] <= eps and rth[k] <= eps:
         break
-
+    
+    if current_time >= tmax:
+        break
+    
+    if current_time > t_movie:
+        filename = os.path.join(directory, f'ws_{km}_{nx}_{ny}_{ra}_{its}_{isolver}_{icompact}.npz')
+        np.savez(filename,
+                 w = w, s = s) 
+        t_movie = t_movie + dt_movie
+        km = km + 1
+    
 kc = kc[:k+1]
 rw = rw[:k+1]
 rs = rs[:k+1]
 rth = rth[:k+1]
+time = time[:k+1]
+
+ene = ene[:k+1]
+ens = ens[:k+1]
+dis = dis[:k+1]
+NuH = NuH[:k+1]
+NuC = NuC[:k+1]
+NuMean = NuMean[:k+1]
+tprobe = tprobe[:k+1,:]
     
 total_clock_time = tm.time() - clock_time_init
 print('Total clock time=', total_clock_time)
 
-
 #%%
-fig, ax = plt.subplots(1,1,figsize=(8,6))
-ax.semilogy(kc, rw)
-ax.semilogy(kc, rs)
-ax.semilogy(kc, rth)
-plt.show()
+fout = os.path.join(directory, f'cpu_time_{nx}_{ny}_{ra}_{its}_{isolver}_{icompact}.txt')
+input_data['cpu_time'] = total_clock_time
 
-#%%
-fig, axs = plt.subplots(3,1,figsize=(10,15))
-cs = axs[0].contour(X,Y,w,40,vmin=-4.5, vmax=4.5,colors='black')
-cs = axs[0].imshow(w.T,extent=[0, 2, 0, 1], origin='lower',
-        interpolation='bicubic',cmap='RdBu', alpha=1.0)
-#cax = fig.add_axes([1.05, 0.25, 0.05, 0.5])
-fig.colorbar(cs, ax=axs[0], shrink=0.8, orientation='vertical')
-axs[0].set_aspect('equal')
+fo = open(fout, "w")
+for k, v in input_data.items():
+    fo.write(str(k) + ' --- '+ str(v) + '\n')
+fo.close()
 
-cs = axs[1].contour(X,Y,s,40,vmin=-0.12, vmax=0.12,colors='black')
-cs = axs[1].imshow(s.T,extent=[0, 2, 0, 1], origin='lower',
-        interpolation='bicubic',cmap='RdBu', alpha=1.0)
-#cax = fig.add_axes([1.05, 0.25, 0.05, 0.5])
-fig.colorbar(cs, ax=axs[1], shrink=0.8, orientation='vertical')
-axs[1].set_aspect('equal')
+filename = os.path.join(directory, f'residual_{nx}_{ny}_{ra}_{its}_{isolver}_{icompact}.png')
+plot_residual_history(kc,rw,rs,rth,filename)
 
-cs = axs[2].contour(X,Y,th,40,vmin=-0, vmax=1,colors='black')
-cs = axs[2].imshow(th.T,extent=[0, 2, 0, 1], origin='lower',
-        interpolation='bicubic',cmap='RdBu', alpha=1.0)
-#cax = fig.add_axes([1.05, 0.25, 0.05, 0.5])
-fig.colorbar(cs, ax=axs[2], shrink=0.8, orientation='vertical')
-axs[2].set_aspect('equal')
+filename = os.path.join(directory, f'turb_params_{nx}_{ny}_{ra}_{its}_{isolver}_{icompact}.png')
+plot_turbulent_parameters(time,ene,ens,dis,NuMean,filename)
 
-plt.show()
-fig.tight_layout()
-fig.savefig(f'rbc_ws_{its}_{isolver}.png', bbox_inches = 'tight', pad_inches = 0.1, dpi = 200)
+filename = os.path.join(directory, f'probe_temperature_{nx}_{ny}_{ra}_{its}_{isolver}_{icompact}.png')
+plot_probe_temperature(time, NuH, NuC, tprobe,filename)
 
-#%%
-u = np.zeros((nx+1,ny+1))
-v = np.zeros((nx+1,ny+1))
-u[:,ny] = 1.0
+ramax = 1.0e6
+filename = os.path.join(directory, f'contour_{nx}_{ny}_{ra}_{its}_{isolver}_{icompact}.png')
+plot_contour(X,Y,w,s,th,ra,ramax,filename)
 
-i = np.arange(1,nx)
-j = np.arange(1,ny)
-ii,jj = np.meshgrid(i,j, indexing='ij')
-
-u[ii,jj] = (s[ii,jj+1] - s[ii,jj-1])/(2.0*dy) 
-v[ii,jj] = -(s[ii+1,jj] - s[ii-1,jj])/(2.0*dx)
-
-#%%
-# expt_data = np.loadtxt(f'plot_u_y_Ghia{int(re)}.csv', delimiter=',', skiprows=1)
-
-# uc = u[int(nx/2),:]
-# plt.plot(uc,y,'r-',lw=2,fillstyle='none',mew=1,ms=8)
-# plt.plot(expt_data[:,1],expt_data[:,0],'go',fillstyle='none',mew=1,ms=8)
-# plt.show()            
-
-filename = os.path.join(directory, f'solution_{int(re)}_{nx}_{ny}.npz')
+filename = os.path.join(directory, f'solution_{nx}_{ny}_{ra}_{its}_{isolver}_{icompact}.npz')
 np.savez(filename,
          X = X, Y = Y,
          w = w, s = s, 
-         kc = kc, 
-         rw = rw, rs = rs)  
+         kc = kc, rw = rw, rs = rs)  
 

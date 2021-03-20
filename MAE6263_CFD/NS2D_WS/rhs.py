@@ -11,6 +11,7 @@ from rhs_schemes.rhs_compact import *
 
 def rhs(nx,ny,dx,dy,re,pr,w,s,th,input_data):
     isolver = input_data['isolver']
+    icompact = input_data['icompact']
         
     if isolver == 1:
         rw, rth = rhs_arakawa(nx,ny,dx,dy,re,pr,w,s,th)
@@ -19,5 +20,5 @@ def rhs(nx,ny,dx,dy,re,pr,w,s,th,input_data):
         rw, rth = rhs_cs(nx,ny,dx,dy,re,pr,w,s,th)
         return rw, rth
     elif isolver == 3:
-        rw, rth = rhs_compact_scheme(nx,ny,dx,dy,re,pr,w,s,th)
+        rw, rth = rhs_compact_scheme(nx,ny,dx,dy,re,pr,w,s,th,icompact)
         return rw, rth
