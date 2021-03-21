@@ -74,7 +74,7 @@ def plot_residual_history(kc,rw,rs,rth,filename):
     ax.semilogy(kc, rs, label='$\psi$')
     ax.semilogy(kc, rth, label='$\Theta$')
     ax.legend()
-    plt.show()
+    # plt.show()
     fig.savefig(filename, bbox_inches = 'tight', pad_inches = 0.1, dpi = 200)
 
 def plot_turbulent_parameters(time,ene,ens,dis,NuMean,filename):
@@ -88,7 +88,7 @@ def plot_turbulent_parameters(time,ene,ens,dis,NuMean,filename):
     for i in range(4):
         axs[i].legend()
 
-    plt.show()
+    # plt.show()
     fig.savefig(filename, bbox_inches = 'tight', pad_inches = 0.1, dpi = 200)    
     
 def plot_probe_temperature(time, NuH, NuC, tprobe,filename):
@@ -103,7 +103,7 @@ def plot_probe_temperature(time, NuH, NuC, tprobe,filename):
     for i in range(2):
         ax[i].legend()
     
-    plt.show()
+    # plt.show()
     fig.savefig(filename, bbox_inches = 'tight', pad_inches = 0.1, dpi = 200)
 
 def plot_contour(X,Y,w,s,th,ra,ra_max,filename):
@@ -111,8 +111,8 @@ def plot_contour(X,Y,w,s,th,ra,ra_max,filename):
     if ra < ra_max:
         cs = axs[0].contour(X,Y,w,20,colors='black')
     cs = axs[0].imshow(w.T,extent=[0, 2, 0, 1], origin='lower',
-            interpolation='bicubic',cmap='RdBu_r', alpha=1.0,
-            vmin=-20, vmax=20)
+            interpolation='bicubic',cmap='RdBu_r', alpha=1.0,)
+            # vmin=-20, vmax=20)
     #cax = fig.add_axes([1.05, 0.25, 0.05, 0.5])
     fig.colorbar(cs, ax=axs[0], shrink=0.8, orientation='vertical')
     axs[0].set_aspect('equal')
@@ -133,6 +133,6 @@ def plot_contour(X,Y,w,s,th,ra,ra_max,filename):
     fig.colorbar(cs, ax=axs[2], shrink=0.8, orientation='vertical')
     axs[2].set_aspect('equal')
     
-    plt.show()
+    # plt.show()
     fig.tight_layout()
     fig.savefig(filename, bbox_inches = 'tight', pad_inches = 0.1, dpi = 200)
