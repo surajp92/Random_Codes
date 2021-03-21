@@ -25,8 +25,7 @@ import argparse
 
 from poisson import *
 from rhs import *
-from euler import *
-from rk3 import *
+from time_integration import *
 from utils import *
 
 # font = {'family' : 'Times New Roman',
@@ -71,15 +70,14 @@ def bc3(nx,ny,w,s):
 
 #%% 
 # read input file
-# parser = argparse.ArgumentParser()
-# parser.add_argument("config", default="rbc.yaml", help="Config yaml file")
-# args = parser.parse_args()
-# config_file = args.config
+parser = argparse.ArgumentParser()
+parser.add_argument("config", default="rbc.yaml", help="Config yaml file")
+args = parser.parse_args()
+config_file = args.config
     
-# with open(config_file) as file:
-with open('rbc_parameters.yaml') as file:    
+with open(config_file) as file:
+# with open('config/rbc_parameters.yaml') as file:    
     input_data = yaml.load(file, Loader=yaml.FullLoader)
-#    input_data = yaml.load(file)
     
 file.close()
 
@@ -108,6 +106,8 @@ v3 = input_data['v3']
 tolerance = float(input_data['tolerance'])
 cfl = input_data['cfl']
 sigma = input_data['sigma']
+tave = input_data['tave']
+tmax = input_data['tmax']
 
 re = np.sqrt(ra/pr)
 
@@ -169,9 +169,6 @@ kc, rw, rs, rth, time = [np.zeros(nt+1) for i in range(5)]
 ene, ens, dis, NuH, NuC, NuMean = [np.zeros(nt+1) for i in range(6)]
 tprobe = np.zeros((nt+1,5))
 
-tave = 0.0
-tmax = 100.0
-
 dt_movie = (tmax - tave)/nsmovie
 t_movie = tave
 current_time = 0.0
@@ -204,14 +201,14 @@ for k in range(1,nt+1):
         print('%0.5i %0.3f %0.3e %0.3e %0.3e' % (kc[k], time[k], rw[k], rs[k], rth[k]))
 
     if current_time > t_movie:
-        filename = os.path.join(directory_movie, f'ws_{km}_{current_time:0.2f}.npz')
+        filename = os.path.join(directory_movie, f'ws_{km}.npz')
         np.savez(filename,
                  w = w, s = s,th=th) 
         t_movie = t_movie + dt_movie
         km = km + 1
     
     if k % sfreq == 0:
-        filename = os.path.join(directory_save, f'ws_{k}_{current_time:0.2f}.npz')
+        filename = os.path.join(directory_save, f'ws_{k}.npz')
         np.savez(filename,
                  w = w, s = s, th=th)  
     

@@ -24,8 +24,7 @@ import yaml
 
 from poisson import *
 from rhs import *
-from euler import *
-from rk3 import *
+from time_integration import *
 from utils import *
 
 font = {'family' : 'Times New Roman',
