@@ -22,6 +22,8 @@ from scipy.fftpack import dst, idst
 from scipy.ndimage import gaussian_filter
 import yaml
 import argparse
+import sys
+orig_stdout = sys .stdout
 
 from poisson import *
 from rhs import *
@@ -70,13 +72,13 @@ def bc3(nx,ny,w,s):
 
 #%% 
 # read input file
-parser = argparse.ArgumentParser()
-parser.add_argument("config", default="rbc.yaml", help="Config yaml file")
-args = parser.parse_args()
-config_file = args.config
-    
-with open(config_file) as file:
-# with open('config/rbc_parameters.yaml') as file:    
+#parser = argparse.ArgumentParser()
+#parser.add_argument("config", default="config/rbc_parameters.yaml", help="Config yaml file")
+#args = parser.parse_args()
+#config_file = args.config
+#    
+#with open(config_file) as file:
+with open('config/rbc_parameters.yaml') as file:    
     input_data = yaml.load(file, Loader=yaml.FullLoader)
     
 file.close()
@@ -110,6 +112,10 @@ tave = input_data['tave']
 tmax = input_data['tmax']
 
 re = np.sqrt(ra/pr)
+
+
+log = open(f"logs/rbc_{nx}_{ny}_{ra:0.1e}.txt", "w")
+sys.stdout = log
 
 if ip == 1:
     directory = f'RBC_FST_{isolver}'
@@ -199,6 +205,8 @@ for k in range(1,nt+1):
     
     if k % pfreq == 0:
         print('%0.5i %0.3f %0.3e %0.3e %0.3e' % (kc[k], time[k], rw[k], rs[k], rth[k]))
+        sys.stdout.flush()
+#        print('%0.5i %0.3f %0.3e %0.3e %0.3e' % (kc[k], time[k], rw[k], rs[k], rth[k]), file=log)
 
     if current_time > t_movie:
         filename = os.path.join(directory_movie, f'ws_{km}.npz')
@@ -217,6 +225,10 @@ for k in range(1,nt+1):
     
     if current_time >= tmax:
         break
+
+
+sys.stdout = orig_stdout
+log.close()
     
 kc = kc[:k+1]
 rw = rw[:k+1]

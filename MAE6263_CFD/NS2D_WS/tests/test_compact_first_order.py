@@ -11,6 +11,10 @@ import matplotlib.pyplot as plt
 import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import time
+
+import warnings
+warnings.filterwarnings("ignore")
 
 #import rhs_schemes.compact_schemes_first_order_derivative
 
@@ -23,10 +27,12 @@ if __name__ == "__main__":
     
     error = []
     
+    start = time.time()
+    
     print('#-----------------Dx-------------------#')
     for i in range(3):
         # dx = 0.05/(2**i)
-        nx = 16*2**i #int((xr - xl)/dx)
+        nx = 256*2**i #int((xr - xl)/dx)
         dx = (xr - xl)/nx
           
         ny = 2*nx
@@ -44,7 +50,7 @@ if __name__ == "__main__":
         u[:,:] = np.sin(np.pi*X) + np.sin(2.0*np.pi*Y)
         udx[:,:] = (np.pi)*np.cos(np.pi*X) 
         
-        udn = c4d_p(u,dx,dy,nx,ny,'X')
+        udn = c4d(u,dx,dy,nx,ny,'X')
 #        udn = c4d_b4(u,dx,nx,ny,'X')
         
         errL2 = np.linalg.norm(udx - udn)/np.sqrt(np.size(udn))
@@ -63,7 +69,7 @@ if __name__ == "__main__":
     print('#-----------------Dy-------------------#')
     for i in range(4):
 #        dx = 0.05/(2**i)
-        nx = 16*2**i #int((xr - xl)/dx)
+        nx = 256*2**i #int((xr - xl)/dx)
         dx = (xr - xl)/nx
           
         ny = int(1*nx)
@@ -81,7 +87,7 @@ if __name__ == "__main__":
         u[:,:] = np.sin(np.pi*X) + np.sin(2.0*np.pi*Y)
         udy[:,:] = (2.0*np.pi)*np.cos(2.0*np.pi*Y) 
         
-        udn = c4d_p(u,dx,dy,nx,ny,'Y')
+        udn = c4d(u,dx,dy,nx,ny,'Y')
 #        udn = c4d_b4(u,dx,ny,nx,'Y')
                 
         errL2 = np.linalg.norm(udy - udn)/np.sqrt(np.size(udn))
@@ -94,15 +100,17 @@ if __name__ == "__main__":
             print('L2 order:  %5.3f' % rateL2)
         
         errL2_0 = errL2
-        
-    fig, axs = plt.subplots(1,2,figsize=(14,5))
-    cs = axs[0].contourf(X, Y, udy, 60,cmap='jet')
-    #cax = fig.add_axes([1.05, 0.25, 0.05, 0.5])
-    fig.colorbar(cs, ax=axs[0], orientation='vertical')
     
-    cs = axs[1].contourf(X, Y, udn,60,cmap='jet')
-    #cax = fig.add_axes([1.05, 0.25, 0.05, 0.5])
-    fig.colorbar(cs, ax=axs[1], orientation='vertical')
+    print('CPU time = ', time.time() - start)
     
-    plt.show()
-    fig.tight_layout()
+#    fig, axs = plt.subplots(1,2,figsize=(14,5))
+#    cs = axs[0].contourf(X, Y, udy, 60,cmap='jet')
+#    #cax = fig.add_axes([1.05, 0.25, 0.05, 0.5])
+#    fig.colorbar(cs, ax=axs[0], orientation='vertical')
+#    
+#    cs = axs[1].contourf(X, Y, udn,60,cmap='jet')
+#    #cax = fig.add_axes([1.05, 0.25, 0.05, 0.5])
+#    fig.colorbar(cs, ax=axs[1], orientation='vertical')
+#    
+#    plt.show()
+#    fig.tight_layout()

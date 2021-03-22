@@ -9,6 +9,10 @@ Created on Sat Mar  6 18:52:37 2021
 import numpy as np
 from .thomas_algorithms import *
 import matplotlib.pyplot as plt
+from scipy.sparse import csc_matrix
+from scipy.sparse import lil_matrix
+from scipy.sparse.linalg import inv
+from scipy.sparse.linalg import spsolve
 
 def c4d(f,dx,dy,nx,ny,isign):
     
@@ -48,6 +52,23 @@ def c4d(f,dx,dy,nx,ny,isign):
     
     start = 0
     end = nx
+    
+#    A = csc_matrix((nx+1, nx+1))
+#    ii = np.arange(1,nx)
+#    A[ii,ii] = 1.0
+#    A[ii,ii-1] = 1.0/4.0
+#    A[ii,ii+1] = 1.0/4.0
+#    
+#    ii = 0
+#    A[ii,ii] = 1.0
+#    A[ii,ii+1] = 2.0
+#    
+#    ii = nx
+#    A[ii,ii] = 1.0
+#    A[ii,ii-1] = 2.0
+#    
+#    ud = spsolve(A, r) #inv(A) @ r
+    
     ud = tdma(a,b,c,r,start,end)
     
     if isign == 'X':

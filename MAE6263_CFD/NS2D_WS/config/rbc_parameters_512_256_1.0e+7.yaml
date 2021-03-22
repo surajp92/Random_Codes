@@ -1,10 +1,10 @@
 # parameters of the Rayleigh-Benard convection problem
 
-nx : 64     # NXF
-ny : 32     # NYF
-ra : 1.0e4  # Ra, Rayleigh number 
+nx : 512     # NXF
+ny : 256     # NYF
+ra : 1.0e7  # Ra, Rayleigh number 
 pr : 0.7    # Prandtl number
-nt : 20000  # NT, number of time step
+nt : 40000  # NT, number of time step
 lx : 2.0    # length of the domain in x-direction
 ly : 1.0    # length of the domain in y-direction
 wc : 0.0     # cold wall temperature
@@ -22,7 +22,7 @@ v3 : 2
 tolerance : 1e-3 # Tolerance for the Poisson solver
 pfreq : 1 # print frequency
 sfreq : 50 # save frequency
-nsmovie : 100 # number of snapshots for movie
+nsmovie : 200 # number of snapshots for movie
 cfl : 0.9 # CFL (CFL convective stability; e.g., 0.9)
 sigma : 0.25  # sigma (Neumann stability condition; e.g., 0.25)
 tave : 0  # time to start for movie

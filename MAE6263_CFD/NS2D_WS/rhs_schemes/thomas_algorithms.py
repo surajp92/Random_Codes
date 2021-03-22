@@ -8,6 +8,9 @@ Created on Sat Mar  6 17:24:39 2021
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.sparse import csc_matrix
+from scipy.sparse.linalg import inv
+
 
 def tdma(a,b,c,r,s,e):
     
@@ -139,76 +142,24 @@ if __name__ == "__main__":
     r = tdma(a, b, c, dd, 1, 3)[1:-1,0]
     re = np.linalg.solve(A, d)[1:-1]
     print(r - re)
+
+#%%    
+    nx = 8
+    A = csc_matrix((nx+1, nx+1))
+    ii = np.arange(1,nx)
+    A[ii,ii] = 1.0
+    A[ii,ii-1] = 1.0/4.0
+    A[ii,ii+1] = 1.0/4.0
     
-    # xl = -1.0
-    # xr = 1.0
-    # dx = 0.025
-    # nx = int((xr - xl)/dx)
+    ii = 0
+    A[ii,ii] = 1.0
+    A[ii,ii+1] = 2.0
     
-    # dt = 0.0025
-    # tmax = 1.0
-    # nt = int(tmax/dt)
+    ii = nx
+    A[ii,ii] = 1.0
+    A[ii,ii-1] = 2.0
     
-    # ny = nx
-    
-    # x = np.linspace(xl,xr,nx+1)
-    # xx = (np.ones((ny+1,1))*x).T
-    
-    # t = np.linspace(0,tmax,nt+1)
-    # u = np.zeros((nt+1,nx+1,ny+1))
-    # a = np.zeros((nx+1,ny+1))
-    # b = np.zeros((nx+1,ny+1))
-    # c = np.zeros((nx+1,ny+1))
-    # r = np.zeros((nx+1,ny+1))
-    
-    # k = 0
-    # u[k,:,:] = -np.sin(np.pi*xx)
-    
-    # exact = lambda x,t : -np.exp(-t)*np.sin(np.pi*x)
-    
-    # ue = exact(xx,tmax)
-    
-    # start = 1
-    # end = nx-1
-    
-    # i = 0
-    # a[i,:],b[i,:],c[i,:],r[i,:] = 0.0, 1.0, 0.0, exact(x[i],0) 
-    
-    # i = nx
-    # a[i,:],b[i,:],c[i,:],r[i,:] = 0.0, 1.0, 0.0, exact(x[i],0) 
-    
-    # alpha = 1.0/(np.pi**2)
-    
-    # ii = np.arange(1,nx)
-    
-    # a[ii,:] = 12.0/(dx*dx) - 2.0/(alpha*dt)
-    # b[ii,:] = -24.0/(dx*dx) - 20.0/(alpha*dt)
-    # c[ii,:] = 12.0/(dx*dx) - 2.0/(alpha*dt)
-    
-    # for k in range(1,nt+1):
-    #     i = 0
-    #     r[i,:] = exact(x[i],t[k]) 
-              
-    #     r[ii,:] = -(2.0/(alpha*dt))*(u[k-1,ii+1,:] + 10.0*u[k-1,ii,:] + u[k-1,ii-1,:]) - \
-    #              (12.0/(dx**2))*(u[k-1,ii+1,:] - 2.0*u[k-1,ii,:] + u[k-1,ii-1,:])
-        
-    #     i = nx
-    #     r[i,:] = exact(x[i],t[k]) 
-        
-    #     u[k,:,:] = tdma(a,b,c,r,start,end)
-    
-    # uerror = u[-1,:,:] - ue
-    # l2 = np.linalg.norm(uerror)/np.sqrt(np.size(uerror))
-    
-    # print(f'L2 norm of the error = {l2}')
-    
-    # plt.plot(x,ue)
-    # plt.plot(x,u[-1,:],'--')
-    # plt.show()
-    
-    # plt.plot(x,np.abs((ue-u[-1,:])), 'bo-')
-    # plt.show()
-        
+    print(A.todense())
         
             
     

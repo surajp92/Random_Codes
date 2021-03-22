@@ -25,8 +25,8 @@ def compute_history(nx,ny,dx,dy,x,y,re,pr,s,w,th,input_data):
         sx = c6d_p(s,dx,dy,nx,ny,'X') 
         sy = c6d_b5_d(s,dx,dy,nx,ny,'Y')  
     
-    u = -sy
-    v = sx
+    u = sy
+    v = -sx
     
     umax = np.max(np.abs(u))
     vmax = np.max(np.abs(v))
