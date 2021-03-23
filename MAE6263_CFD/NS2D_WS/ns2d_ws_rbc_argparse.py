@@ -113,10 +113,6 @@ tmax = input_data['tmax']
 
 re = np.sqrt(ra/pr)
 
-
-log = open(f"logs/rbc_{nx}_{ny}_{ra:0.1e}.txt", "w")
-sys.stdout = log
-
 if ip == 1:
     directory = f'RBC_FST_{isolver}'
     if not os.path.exists(directory):
@@ -138,6 +134,15 @@ elif ip == 2:
     directory = f'MG_{isolver}'
     if not os.path.exists(directory):
         os.makedirs(directory)        
+
+filename = os.path.join(directory, f"rbc_res_{nx}_{ny}_{ra:0.1e}.txt")
+log = open(filename, "w")
+sys.stdout = log
+
+filename = os.path.join(directory, f"rbc_stats_{nx}_{ny}_{ra:0.1e}.txt")
+fstats = open(filename,"w+")
+
+fstats_final =os.path.join(directory, f"rbc_stats_final_{nx}_{ny}_{ra:0.1e}.yaml")  
 
 #%% 
 pi = np.pi
@@ -206,6 +211,7 @@ for k in range(1,nt+1):
     if k % pfreq == 0:
         print('%0.5i %0.3f %0.3e %0.3e %0.3e' % (kc[k], time[k], rw[k], rs[k], rth[k]))
         sys.stdout.flush()
+        
 #        print('%0.5i %0.3f %0.3e %0.3e %0.3e' % (kc[k], time[k], rw[k], rs[k], rth[k]), file=log)
 
     if current_time > t_movie:
@@ -216,12 +222,17 @@ for k in range(1,nt+1):
         km = km + 1
     
     if k % sfreq == 0:
+        fstats.write('%0.5i %0.3f %0.3f %0.3f %0.3f %0.3f %0.3f %0.3f %0.3f %0.3f %0.3f %0.3f %0.3f \n' % 
+                (kc[k], time[k], ene[k], ens[k], dis[k], NuH[k], NuC[k], NuMean[k], 
+                 tprobe[k,0], tprobe[k,1], tprobe[k,2], tprobe[k,3], tprobe[k,4]))
+        fstats.flush()
+        
         filename = os.path.join(directory_save, f'ws_{k}.npz')
         np.savez(filename,
                  w = w, s = s, th=th)  
     
-    if rw[k] <= eps and rs[k] <= eps and rth[k] <= eps:
-        break
+    # if rw[k] <= eps and rs[k] <= eps and rth[k] <= eps:
+    #     break
     
     if current_time >= tmax:
         break
@@ -229,6 +240,7 @@ for k in range(1,nt+1):
 
 sys.stdout = orig_stdout
 log.close()
+fstats.close()
     
 kc = kc[:k+1]
 rw = rw[:k+1]
@@ -256,6 +268,11 @@ for k, v in input_data.items():
     fo.write(str(k) + ' --- '+ str(v) + '\n')
 fo.close()
 
+stats = write_histor(tmax,time,ene,ens,dis,NuH,NuC,NuMean,tprobe,input_data,)
+stats['Time_CPU'] = total_clock_time
+with open(fstats_final, 'w') as outfile:
+    yaml.dump(stats, outfile, default_flow_style=False)
+        
 filename = os.path.join(directory, f'residual_{nx}_{ny}_{ra:0.1e}_{its}_{isolver}_{icompact}.png')
 plot_residual_history(kc,rw,rs,rth,filename)
 
@@ -269,7 +286,7 @@ ramax = 1.0e6
 filename = os.path.join(directory, f'contour_{nx}_{ny}_{ra:0.1e}_{its}_{isolver}_{icompact}.png')
 plot_contour(X,Y,w,s,th,ra,ramax,filename)
 
-filename = os.path.join(directory, f'statistics__{nx}_{ny}_{ra:0.1e}_{its}_{isolver}_{icompact}.npz')
+filename = os.path.join(directory, f'statistics_{nx}_{ny}_{ra:0.1e}_{its}_{isolver}_{icompact}.npz')
 np.savez(filename,
          kc=kc, rw=rw, rs=rs, rth=rth,
          time=time, ene=ene, ens=ens, dis=dis, NuMean=NuMean,

@@ -1,7 +1,7 @@
 # parameters of the Rayleigh-Benard convection problem
 
-nx : 64     # NXF
-ny : 32     # NYF
+nx : 32     # NXF
+ny : 16     # NYF
 ra : 1.0e4  # Ra, Rayleigh number 
 pr : 0.7    # Prandtl number
 nt : 20000  # NT, number of time step

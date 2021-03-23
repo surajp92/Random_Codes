@@ -9,6 +9,7 @@ import numpy as np
 from scipy.integrate import simps
 import matplotlib.pyplot as plt 
 from rhs_schemes.compact_schemes_first_order_derivative import *
+import yaml
 
 def compute_history(nx,ny,dx,dy,x,y,re,pr,s,w,th,input_data):
     
@@ -68,6 +69,49 @@ def compute_history(nx,ny,dx,dy,x,y,re,pr,s,w,th,input_data):
     
     return dt, ene, ens, dis, NuH, NuC, Nu_mean, tprobe
 
+def write_histor(tmax,time,ene,ens,dis,NuH,NuC,NuMean,tprobe,input_data):
+    slice_ = time > 0.5*tmax
+    
+    ene_mean = np.mean(ene[slice_])
+    ens_mean = np.mean(ens[slice_])
+    dis_mean = np.mean(dis[slice_])
+    NuH_mean = np.mean(NuH[slice_])
+    NuC_mean = np.mean(NuC[slice_])
+    NuMean_mean = np.mean(NuMean[slice_])
+    NuMean_min = np.min(NuMean[slice_])
+    NuMean_max = np.max(NuMean[slice_])
+    NuMean_std = np.std(NuMean[slice_])
+    tprobe_mean = np.mean(tprobe[slice_], axis=1)
+    
+    stats = dict(
+        Ra = input_data['ra'],
+        Pr = input_data['pr'],
+        Nx = input_data['nx'],
+        Ny = input_data['ny'],
+        Time_max = float(tmax),
+        Time_average = float(0.5*tmax),
+        Energy = float(ene_mean),
+        Enstrophy = float(ens_mean),
+        Dissipation = float(dis_mean),
+        Nusselt_number_Hot = float(NuH_mean),
+        Nusselt_number_Cold = float(NuC_mean),
+        Nusselt_number_Average = dict(
+            Mean = float(NuMean_mean), 
+            Min = float(NuMean_min),
+            Max = float(NuMean_max),
+            Std = float(NuMean_std),
+            ),
+        Tprobe1 = float(tprobe_mean[0]),
+        Tprobe2 = float(tprobe_mean[1]),
+        Tprobe3 = float(tprobe_mean[2]),
+        Tprobe4 = float(tprobe_mean[3]),
+        Tprobe5 = float(tprobe_mean[4]),
+        )
+    
+    return stats
+    
+    
+    
 def plot_residual_history(kc,rw,rs,rth,filename):
     fig, ax = plt.subplots(1,1,figsize=(8,6))
     ax.semilogy(kc, rw, label='$\omega$')
