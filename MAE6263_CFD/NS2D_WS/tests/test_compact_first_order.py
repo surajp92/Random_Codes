@@ -16,6 +16,16 @@ import time
 import warnings
 warnings.filterwarnings("ignore")
 
+import matplotlib.pyplot as plt 
+
+font = {'family' : 'Times New Roman',
+     'size'   : 18}    
+plt.rc('font', **font)
+
+import matplotlib as mpl
+mpl.rcParams['text.usetex'] = True
+mpl.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath}']
+
 #import rhs_schemes.compact_schemes_first_order_derivative
 
 from rhs_schemes.compact_schemes_first_order_derivative import *
@@ -25,14 +35,15 @@ if __name__ == "__main__":
     xl = -1.0
     xr = 1.0
     
+    grid = []
     error = []
     
     start = time.time()
     
     print('#-----------------Dx-------------------#')
-    for i in range(3):
+    for i in range(5):
         # dx = 0.05/(2**i)
-        nx = 256*2**i #int((xr - xl)/dx)
+        nx = 32*2**i #int((xr - xl)/dx)
         dx = (xr - xl)/nx
           
         ny = 2*nx
@@ -56,6 +67,7 @@ if __name__ == "__main__":
         errL2 = np.linalg.norm(udx - udn)/np.sqrt(np.size(udn))
         
         error.append(errL2 )
+        grid.append(nx )
         
         print('#----------------------------------------#')
         print('n = %d' % (nx))
@@ -69,7 +81,7 @@ if __name__ == "__main__":
     print('#-----------------Dy-------------------#')
     for i in range(4):
 #        dx = 0.05/(2**i)
-        nx = 256*2**i #int((xr - xl)/dx)
+        nx = 32*2**i #int((xr - xl)/dx)
         dx = (xr - xl)/nx
           
         ny = int(1*nx)
@@ -102,6 +114,24 @@ if __name__ == "__main__":
         errL2_0 = errL2
     
     print('CPU time = ', time.time() - start)
+
+#%%    
+    fig, axs = plt.subplots(1,1,figsize=(6,5))
+    grid = np.array(grid)
+    line = 500*grid**(-4.0)
+    
+    axs.loglog(grid, error, 'ro-', fillstyle='none', ms = 8 )
+    axs.loglog(grid, line, 'k--' )
+    
+    axs.text(2**6,5e-5, '$-\epsilon^{4}$')
+    axs.set_xscale('log', basex=2)
+    axs.grid()    
+    axs.set_title('First-order')
+    axs.set_xlabel('$N$')
+    axs.set_ylabel('$\epsilon$')
+    plt.show()
+    fig.tight_layout()
+    fig.savefig('f_order.png', dpi=200)
     
 #    fig, axs = plt.subplots(1,2,figsize=(14,5))
 #    cs = axs[0].contourf(X, Y, udy, 60,cmap='jet')

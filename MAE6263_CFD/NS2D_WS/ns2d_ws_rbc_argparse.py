@@ -167,7 +167,7 @@ th = np.zeros((nx+1,ny+1))
 
 w = 1.0e-3*np.sin(np.pi*X)*np.sin(np.pi*Y) #np.random.randn(nx-1,ny-1)
 
-th = 1.0 - Y
+#th = 1.0 - Y
 th[:,0] = wh
 th[:,ny] = wc
 
