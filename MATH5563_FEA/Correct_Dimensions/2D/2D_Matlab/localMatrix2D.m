@@ -1,0 +1,27 @@
+function mat = localMatrix2D(fun, vert, pd1, d1, pd2, d2, ng)
+%% USAGE: generate local matrices on an interval using Lagrange FE basis.
+%        each entry: a_ij = Int_vert fun D1(v) D2(u) dx
+% INPUTS:
+% fun --- the coefficient function from PDE
+% vert --- vertices of the element
+% d1 --- derivative index for test function (possible value: 0,1)
+% d2 --- derivative index for trial function (possible value: 0,1)
+% pd1 --- polynomial degree of test function (possible value: 1,2,3,4,5)
+% pd2 --- polynomial degree of trial function (possible value: 1,2,3,4,5)
+% ng --- number of Gaussian nodes  possible values = 1,2,3,4,5,6
+
+% OUTPUTS:
+% mat --- local (mass, stiffness, ...) matrix
+%
+% Last Modified: 01/25/2021 by Xu Zhang
+%%
+mat = zeros(pd1+1,pd2+1);
+[gw, gx, gy] = gaussQuad2D(vert, ng);
+f = feval(fun, gx, gy);
+for i = 1:(pd1+1)*(pd1+2)/2
+    Li = bas2D(gx, gy, vert, pd1, i, d1);
+    for j = 1:(pd2+1)*(pd2+2)/2
+        Lj = bas2D(gx, gy, vert, pd2, j, d2);
+        mat(i,j) = sum(gw.*f.*Li.*Lj);
+    end
+end
