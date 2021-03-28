@@ -101,17 +101,19 @@ def fps(nx, ny, dx, dy, f):
     bb = 2.0/(dx*dx)
     cc = 2.0/(dy*dy)
     
-    kx = np.arange(0, nx, dtype='float')
-    ky = np.arange(0, ny, dtype='float')
+    hx = 2.0*np.pi/np.float64(nx)
+    hy = 2.0*np.pi/np.float64(ny)
     
+    kx = hx*np.arange(0, nx, dtype='float64')
+    ky = hy*np.arange(0, ny, dtype='float64')
+
     kx[0] = epsilon
     ky[0] = epsilon
     
-    cos_kx, cos_ky = np.meshgrid(np.cos((2.0*np.pi/nx)*kx), 
-                                 np.cos((2.0*np.pi/ny)*ky), indexing='ij')
+    cos_kx, cos_ky = np.meshgrid(np.cos(kx), np.cos(ky), indexing='ij')
     
     data = np.empty((nx,ny), dtype='complex128')
-    data1 = np.empty((nx,ny), dtype='complex128')
+    data_f = np.empty((nx,ny), dtype='complex128')
     
     data[:,:] = np.vectorize(complex)(f[0:nx,0:ny],0.0)
 
@@ -121,10 +123,9 @@ def fps(nx, ny, dx, dy, f):
     fft_object = pyfftw.FFTW(a, b, axes = (0,1), direction = 'FFTW_FORWARD')
     fft_object_inv = pyfftw.FFTW(a, b,axes = (0,1), direction = 'FFTW_BACKWARD')
     
-    data_f = fft_object(data)    
-    data_f[0,0] = 0.0
-    
-    data_f[:,:] = data_f[:,:]/(aa + bb*cos_kx[:,:] + cc*cos_ky[:,:])
+    e = fft_object(data)    
+    e[0,0] = 0.0
+    data_f[:,:] = e[:,:]/(aa + bb*cos_kx[:,:] + cc*cos_ky[:,:])
 
     data_i = np.real(fft_object_inv(data_f))
     
