@@ -92,7 +92,7 @@ ax.set_title('First-upwind explicit scheme')
 ax.set_xlabel('$x$')
 ax.set_ylabel('$u$')
 plt.show() 
-fig.savefig('first_explicit_upwind.png', dpi=300)
+fig.savefig('lw_first_explicit_upwind.png', dpi=300)
 
 #%% first implicit upwind
 a = 250.0
@@ -158,7 +158,7 @@ ax.set_title('First-upwind implicit scheme')
 ax.set_xlabel('$x$')
 ax.set_ylabel('$u$')
 plt.show()    
-fig.savefig('first_implicit_upwind.png', dpi=300)
+fig.savefig('lw_first_implicit_upwind.png', dpi=300)
 
 #%% Lax-wendroff scheme
 u_all = []
@@ -211,7 +211,7 @@ ax.set_title('Lax-Wendroff explicit scheme')
 ax.set_xlabel('$x$')
 ax.set_ylabel('$u$')
 plt.show()     
-fig.savefig('lax_wendroff.png', dpi=300)
+fig.savefig('lw_lax_wendroff.png', dpi=300)
 
 #%% BTCS
 u_all = []
@@ -293,5 +293,5 @@ for i in range(2):
     fig.colorbar(surf, shrink=0.5, aspect=5)
     fig.tight_layout()
     plt.show()
-    fig.savefig(f'btcs_c={c}.png', dpi=300)
+    fig.savefig(f'lw_btcs_c={c}.png', dpi=300)
     
